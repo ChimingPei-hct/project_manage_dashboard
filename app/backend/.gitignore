@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+.jwt_secret
+.pytest_cache/

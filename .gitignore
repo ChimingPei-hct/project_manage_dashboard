@@ -23,6 +23,8 @@ dist/
 *.log
 .backend.pid
 .frontend.pid
+app/backend.log
+app/frontend.log
 
 # Editor
 .vscode/

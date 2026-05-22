@@ -1,0 +1,88 @@
+/* PMD 全局样式
+   约束:design/12-前端实现约束.md
+   - 6px 圆角统一
+   - 状态色 CSS 变量,严禁组件 hardcode 色值
+*/
+
+:root {
+  --status-green: #52c41a;
+  --status-yellow: #faad14;
+  --status-red: #f5222d;
+  --status-gray: #d9d9d9;
+
+  --bg: #f5f7fa;
+  --panel: #ffffff;
+  --border: #e5e7eb;
+  --text: #1f2937;
+  --text-muted: #6b7280;
+  --accent: #2563eb;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+               "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+#app { min-height: 100vh; }
+
+button {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+input, select, textarea {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+a { color: var(--accent); text-decoration: none; }
+
+/* 全局 tooltip(由 v-tooltip 指令注入)*/
+.pmd-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(31, 41, 55, 0.95);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 280px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+/* 历史周只读 banner */
+.banner-readonly {
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  color: #ad6800;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  margin: 12px 24px;
+  font-size: 13px;
+}
