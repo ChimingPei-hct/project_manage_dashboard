@@ -1,42 +1,67 @@
 <script setup>
-import { ref } from 'vue'
-const tab = ref('pdt')
-const tabs = [
-  { key: 'pdt', label: 'PDT 信息' },
-  { key: 'ltcs', label: 'LTC 列表' },
-  { key: 'modules', label: '模块管理' },
-  { key: 'admins', label: '人员管理' },
-  { key: 'snapshots', label: '快照管理' },
+import { ref, computed, watch, onMounted } from 'vue'
+import { useAuth } from '../composables/useAuth.js'
+import PdtForm from './admin/PdtForm.vue'
+import LtcList from './admin/LtcList.vue'
+import ModuleEditor from './admin/ModuleEditor.vue'
+import AdminUsers from './admin/AdminUsers.vue'
+import SnapshotPanel from './admin/SnapshotPanel.vue'
+
+const { me } = useAuth()
+
+const TABS = [
+  { key: 'pdt', label: 'PDT 信息', comp: PdtForm, needs: 'pdt_admin' },
+  { key: 'ltcs', label: 'LTC 列表', comp: LtcList, needs: 'pdt_admin' },
+  { key: 'modules', label: '模块管理', comp: ModuleEditor, needs: 'ltc_or_above' },
+  { key: 'admins', label: '人员管理', comp: AdminUsers, needs: 'pdt_admin' },
+  { key: 'snapshots', label: '快照管理', comp: SnapshotPanel, needs: 'pdt_admin' },
 ]
+
+const tabKey = ref(new URLSearchParams(window.location.search).get('tab') || 'pdt')
+const currentTab = computed(() => TABS.find(t => t.key === tabKey.value) || TABS[0])
+const currentComp = computed(() => currentTab.value.comp)
+
+function setTab(key) {
+  tabKey.value = key
+  const url = new URL(window.location)
+  url.searchParams.set('tab', key)
+  url.searchParams.set('view', 'admin')
+  window.history.replaceState({}, '', url)
+}
+
+function canSee(needs) {
+  if (!me.value) return false
+  if (me.value.is_super || me.value.is_pdt_admin) return true
+  if (needs === 'ltc_or_above') {
+    // LTC Admin 也能进模块管理 tab(但只能改自己 LTC)
+    return true
+  }
+  return false
+}
 </script>
 
 <template>
   <div class="admin">
     <h1>管理后台</h1>
-    <p class="hint">骨架阶段:tab 占位,后续阶段实现 CRUD(详见 design/13 §6)。</p>
     <div class="tabs">
       <button
-        v-for="t in tabs"
+        v-for="t in TABS"
         :key="t.key"
-        :class="{ primary: tab === t.key }"
-        v-tooltip="`切换到「${t.label}」管理`"
-        @click="tab = t.key"
+        :class="{ primary: tabKey === t.key }"
+        :disabled="!canSee(t.needs)"
+        v-tooltip="canSee(t.needs) ? `切换到「${t.label}」` : '当前角色无权访问此 tab'"
+        @click="canSee(t.needs) && setTab(t.key)"
       >{{ t.label }}</button>
     </div>
     <div class="panel">
-      <div v-if="tab === 'pdt'">TBD · PDT 信息编辑(name/description/milestones)</div>
-      <div v-else-if="tab === 'ltcs'">TBD · LTC 增删改、归档、重排</div>
-      <div v-else-if="tab === 'modules'">TBD · 模块树编辑、Owner 绑定、kpi/sub_items 维护</div>
-      <div v-else-if="tab === 'admins'">TBD · super_admins / pdt_admins / ltc_admins 维护</div>
-      <div v-else-if="tab === 'snapshots'">TBD · 手动 freeze 本周、历史快照列表</div>
+      <component :is="currentComp" />
     </div>
   </div>
 </template>
 
 <style scoped>
 .admin { padding: 16px 24px; }
-h1 { margin: 0 0 8px; font-size: 20px; }
-.hint { color: var(--text-muted); margin: 0 0 16px; }
-.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; min-height: 240px; color: var(--text-muted); }
+h1 { margin: 0 0 12px; font-size: 20px; }
+.tabs { display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; min-height: 320px; }
 </style>

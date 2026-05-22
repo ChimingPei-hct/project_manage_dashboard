@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuth } from './composables/useAuth.js'
 import { useDashboard } from './composables/useDashboard.js'
 import { useView } from './composables/useView.js'
+import { adminApi } from './composables/useAdminApi.js'
+import { api } from './api/client.js'
 import PdtOverview from './components/PdtOverview.vue'
 import LtcProgress from './components/LtcProgress.vue'
 import RiskDetail from './components/RiskDetail.vue'
@@ -10,8 +12,38 @@ import AdminPanel from './components/AdminPanel.vue'
 import WeekSwitcher from './components/WeekSwitcher.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
-const { pdt, isReadonly, refresh, startSSE } = useDashboard()
+const { ltcs, modules, isReadonly, refresh, startSSE } = useDashboard()
 const { current, pushView } = useView()
+
+const adminsMap = ref({ super: [], pdt: [], ltc: {} })
+async function reloadAdmins() {
+  try { adminsMap.value = await api.get('/api/admins') } catch (_) {}
+}
+
+const isAdminish = computed(() => {
+  if (!me.value) return false
+  if (me.value.is_super || me.value.is_pdt_admin) return true
+  // LTC Admin
+  const myOid = me.value.open_id
+  return Object.values(adminsMap.value.ltc || {}).some(arr => arr.includes(myOid))
+})
+
+const showSeedBtn = computed(() => {
+  if (!me.value?.is_super) return false
+  return (ltcs.value?.length || 0) === 0 && (modules.value?.length || 0) === 0
+})
+
+const seeding = ref(false)
+async function seedDemo() {
+  if (!confirm('将自动创建一份示例 PDT + LTC + 模块作为 onboarding 数据。仅空实例可用。继续?')) return
+  seeding.value = true
+  try {
+    await adminApi.seedDemo()
+    await refresh()
+  } catch (e) {
+    alert(`失败:${e.message}`)
+  } finally { seeding.value = false }
+}
 
 const viewComp = computed(() => {
   switch (current.value.view) {
@@ -23,18 +55,22 @@ const viewComp = computed(() => {
   }
 })
 
-const navItems = [
-  { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
-  { view: 'ltc', label: 'LTC 进展', tip: '查看子项目研发进展矩阵' },
-  { view: 'risks', label: '风险详情', tip: '只看本周非绿项与风险说明' },
-  { view: 'admin', label: '管理', tip: '管理 PDT / LTC / 模块 / 人员' },
-]
+const navItems = computed(() => {
+  const base = [
+    { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
+    { view: 'ltc', label: 'LTC 进展', tip: '查看子项目研发进展矩阵' },
+    { view: 'risks', label: '风险详情', tip: '只看本周非绿项与风险说明' },
+  ]
+  if (isAdminish.value) base.push({ view: 'admin', label: '管理', tip: '管理 PDT / LTC / 模块 / 人员' })
+  return base
+})
 
 function nav(view) { pushView({ view }) }
 
 onMounted(async () => {
   await refreshAuth()
   await refresh()
+  await reloadAdmins()
   startSSE()
 })
 </script>
@@ -53,6 +89,13 @@ onMounted(async () => {
         >{{ n.label }}</button>
       </nav>
       <div class="right">
+        <button
+          v-if="showSeedBtn"
+          class="primary"
+          :disabled="seeding"
+          v-tooltip="'当前实例为空,一键填充一份示例 PDT/LTC/模块,便于演示与上手'"
+          @click="seedDemo"
+        >{{ seeding ? '创建中…' : '+ 示例数据' }}</button>
         <WeekSwitcher />
         <span class="user" v-tooltip="me?.dev_login ? 'Dev 后门身份(本地调试)' : '当前登录用户'">
           {{ me?.name || me?.open_id || '未登录' }}
