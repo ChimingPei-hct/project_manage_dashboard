@@ -657,6 +657,76 @@ async def api_delete_ltc(ltc_id: str, request: Request):
 
 VALID_SCOPES = {"pdt", "ltc"}
 VALID_COLORS = {"green", "yellow", "red"}
+VALID_SEVERITIES = {"red", "yellow"}
+VALID_MILESTONE_TYPES = {"TR", "SOP", "Block", "Custom"}
+
+
+def _normalize_sub_items(raw: list | None) -> list[dict]:
+    """允许 sub_item 携带可选 risk_note / owner_open_id;过滤未知键避免污染。"""
+    out: list[dict] = []
+    if not raw:
+        return out
+    for s in raw:
+        if not isinstance(s, dict) or not s.get("id") or not s.get("name"):
+            continue
+        out.append({
+            "id": s["id"],
+            "name": s["name"],
+            "order": s.get("order", len(out) + 1),
+            "owner_open_id": s.get("owner_open_id") or None,
+            "risk_note": (s.get("risk_note") or "").strip(),
+        })
+    return out
+
+
+def _normalize_kpi_items(raw) -> list[dict]:
+    """KPI 结构化数组 [{label, value, target?}]。空字符串值过滤。"""
+    out: list[dict] = []
+    if not raw:
+        return out
+    if isinstance(raw, dict):
+        # 兼容旧 kpi_values: {key: value}
+        for k, v in raw.items():
+            if not k:
+                continue
+            out.append({"label": str(k), "value": str(v or ""), "target": ""})
+        return out
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        label = (item.get("label") or "").strip()
+        if not label:
+            continue
+        out.append({
+            "label": label,
+            "value": str(item.get("value") or "").strip(),
+            "target": str(item.get("target") or "").strip(),
+        })
+    return out
+
+
+def _normalize_risks(raw, fallback_text: str = "") -> list[dict]:
+    """风险结构化数组 [{severity, text}]。兼容旧 risk_note 字符串。"""
+    out: list[dict] = []
+    if raw:
+        if isinstance(raw, str):
+            t = raw.strip()
+            if t:
+                out.append({"severity": "red", "text": t})
+        elif isinstance(raw, list):
+            for it in raw:
+                if not isinstance(it, dict):
+                    continue
+                t = (it.get("text") or "").strip()
+                if not t:
+                    continue
+                sev = it.get("severity") if it.get("severity") in VALID_SEVERITIES else "red"
+                out.append({"severity": sev, "text": t})
+    if not out and fallback_text:
+        t = fallback_text.strip()
+        if t:
+            out.append({"severity": "red", "text": t})
+    return out
 
 
 @app.get("/api/modules")
@@ -707,7 +777,7 @@ async def api_create_module(request: Request):
             "order": body.get("order", len(rows) + 1),
             "owner_open_id": body.get("owner_open_id"),
             "kpi_fields": body.get("kpi_fields", []),
-            "sub_items": body.get("sub_items", []),
+            "sub_items": _normalize_sub_items(body.get("sub_items", [])),
             "created_at": now_iso(),
             "updated_at": now_iso(),
             "metadata": body.get("metadata", {}),
@@ -736,9 +806,11 @@ async def api_update_module(module_id: str, request: Request):
             if r["id"] != module_id:
                 continue
             _check_edit_module_perm(oid, r)
-            for k in ("group", "name", "order", "owner_open_id", "kpi_fields", "sub_items", "metadata"):
+            for k in ("group", "name", "order", "owner_open_id", "kpi_fields", "metadata"):
                 if k in body:
                     r[k] = body[k]
+            if "sub_items" in body:
+                r["sub_items"] = _normalize_sub_items(body["sub_items"])
             r["updated_at"] = now_iso()
             write_modules(rows)
             await _broadcast("config:reload", {"kind": "modules"})
@@ -791,15 +863,26 @@ def _validate_status_entry(module: dict, entry: dict) -> None:
             raise HTTPException(422, f"sub_item {sid} not in module")
         if sc not in VALID_COLORS:
             raise HTTPException(422, f"invalid sub_items_color for {sid}")
+    # 子项级 risk 文本只校验 sid 存在性
+    sub_risks = entry.get("sub_items_risk", {}) or {}
+    for sid in sub_risks:
+        if sid not in valid_sub_ids:
+            raise HTTPException(422, f"sub_item {sid} not in module (sub_items_risk)")
+    # 新 KPI 兼容旧字段:kpi_items[] 优先,缺则用 kpi_values{}
     kpi_values = entry.get("kpi_values", {}) or {}
     valid_kpi_keys = {k["key"] for k in module.get("kpi_fields", [])}
     for k in kpi_values:
         if k not in valid_kpi_keys:
             raise HTTPException(422, f"kpi key {k} not in module")
-    # 风险说明必填规则
+    # risks[] 校验 severity
+    for r in entry.get("risks") or []:
+        if r.get("severity") not in VALID_SEVERITIES:
+            raise HTTPException(422, "invalid risk severity")
+    # 风险说明必填规则:非全绿时必须有 risks 或 risk_note 任一
     any_non_green = color != "green" or any(v != "green" for v in sub_colors.values())
-    if any_non_green and not (entry.get("risk_note") or "").strip():
-        raise HTTPException(422, "risk_note required when not all green")
+    has_risk = bool((entry.get("risks") or [])) or bool((entry.get("risk_note") or "").strip())
+    if any_non_green and not has_risk:
+        raise HTTPException(422, "risks or risk_note required when not all green")
 
 
 @app.get("/api/status")
@@ -817,11 +900,16 @@ async def api_put_status(module_id: str, request: Request):
     module = next((m for m in modules if m["id"] == module_id), None)
     if not module:
         raise HTTPException(404, "module not found")
+    risk_note_raw = (body.get("risk_note") or "").strip()
+    risks_normalized = _normalize_risks(body.get("risks"), fallback_text=risk_note_raw)
     entry = {
         "module_color": body.get("module_color"),
         "sub_items_color": body.get("sub_items_color", {}) or {},
         "kpi_values": body.get("kpi_values", {}) or {},
-        "risk_note": (body.get("risk_note") or "").strip(),
+        "kpi_items": _normalize_kpi_items(body.get("kpi_items") or body.get("kpi_values")),
+        "risks": risks_normalized,
+        "risk_note": risks_normalized[0]["text"] if risks_normalized else risk_note_raw,
+        "sub_items_risk": {k: str(v or "").strip() for k, v in (body.get("sub_items_risk") or {}).items() if str(v or "").strip()},
         "updated_by": oid,
         "updated_at": now_iso(),
         "metadata": body.get("metadata", {}) or {},
@@ -1053,6 +1141,66 @@ async def _auto_freeze_loop() -> None:
         except Exception:  # pragma: no cover
             pass
         await asyncio.sleep(60)
+
+
+def _migrate_data_once() -> None:
+    """启动时把旧字段补出新字段(幂等):
+    - module_status[*]: 补 kpi_items / risks / sub_items_risk
+    - pdt.json: 补 milestones / overview_cards 空数组
+    - modules.json: sub_items 补 risk_note / owner_open_id 字段
+    """
+    try:
+        with _FileLock("status"):
+            status = read_status()
+            dirty = False
+            for mid, entry in list(status.items()):
+                if not isinstance(entry, dict):
+                    continue
+                if "kpi_items" not in entry:
+                    entry["kpi_items"] = _normalize_kpi_items(entry.get("kpi_values"))
+                    dirty = True
+                if "risks" not in entry:
+                    entry["risks"] = _normalize_risks(None, fallback_text=entry.get("risk_note") or "")
+                    dirty = True
+                if "sub_items_risk" not in entry:
+                    entry["sub_items_risk"] = {}
+                    dirty = True
+            if dirty:
+                write_status(status)
+    except Exception:  # pragma: no cover
+        pass
+    try:
+        with _FileLock("pdt"):
+            pdt = read_pdt()
+            dirty = False
+            if "milestones" not in pdt:
+                pdt["milestones"] = []
+                dirty = True
+            if "overview_cards" not in pdt:
+                pdt["overview_cards"] = []
+                dirty = True
+            if dirty:
+                write_pdt(pdt)
+    except Exception:  # pragma: no cover
+        pass
+    try:
+        with _FileLock("modules"):
+            mods = read_modules()
+            dirty = False
+            for m in mods:
+                norm = _normalize_sub_items(m.get("sub_items"))
+                if norm != m.get("sub_items"):
+                    m["sub_items"] = norm
+                    dirty = True
+            if dirty:
+                write_modules(mods)
+    except Exception:  # pragma: no cover
+        pass
+
+
+@app.on_event("startup")
+async def _on_startup_migrate() -> None:
+    _migrate_data_once()
 
 
 @app.on_event("startup")
