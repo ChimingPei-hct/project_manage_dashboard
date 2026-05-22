@@ -172,3 +172,37 @@ def test_put_admins_super(request, role_fixture, expected):
     c = request.getfixturevalue(role_fixture)
     r = c.put("/api/admins/super", json=[])
     assert r.status_code == expected
+
+
+# ---------------------------------------------------------------------------
+# GET /api/config/auto_freeze — 所有已登录角色可读
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("role_fixture,expected", [
+    ("as_super", 200),
+    ("as_pdt_admin", 200),
+    ("as_ltc_admin_this", 200),
+    ("as_owner_this", 200),
+    ("as_guest", 200),
+])
+def test_get_auto_freeze(request, role_fixture, expected):
+    c = request.getfixturevalue(role_fixture)
+    r = c.get("/api/config/auto_freeze")
+    assert r.status_code == expected
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/config/auto_freeze — 仅 Super 可写
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("role_fixture,expected", [
+    ("as_super", 200),
+    ("as_pdt_admin", 403),
+    ("as_ltc_admin_this", 403),
+    ("as_owner_this", 403),
+    ("as_guest", 403),
+])
+def test_put_auto_freeze(request, role_fixture, expected):
+    c = request.getfixturevalue(role_fixture)
+    r = c.put("/api/config/auto_freeze", json={"enabled": True, "weekday": 4, "hour": 18, "minute": 0})
+    assert r.status_code == expected

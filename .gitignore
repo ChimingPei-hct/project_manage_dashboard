@@ -33,3 +33,7 @@ app/frontend.log
 
 # Playwright
 .playwright-mcp/
+
+# Dev 截图基线(本地参考用,不入仓)
+/baseline-*.png
+/phase*-*.png

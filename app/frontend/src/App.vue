@@ -1,11 +1,11 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAuth } from './composables/useAuth.js'
 import { useDashboard } from './composables/useDashboard.js'
 import { useView } from './composables/useView.js'
 import { adminApi } from './composables/useAdminApi.js'
+import { useAdmins } from './composables/useAdmins.js'
 import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogin.js'
-import { api } from './api/client.js'
 import PdtOverview from './components/PdtOverview.vue'
 import LtcProgress from './components/LtcProgress.vue'
 import RiskDetail from './components/RiskDetail.vue'
@@ -13,13 +13,16 @@ import AdminPanel from './components/AdminPanel.vue'
 import WeekSwitcher from './components/WeekSwitcher.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
-const { ltcs, modules, isReadonly, refresh, startSSE } = useDashboard()
+const { ltcs, modules, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
 const { current, pushView } = useView()
 
-const adminsMap = ref({ super: [], pdt: [], ltc: {} })
-async function reloadAdmins() {
-  try { adminsMap.value = await api.get('/api/admins') } catch (_) {}
-}
+// URL ?week=YYYY-Www ↔ useDashboard.week 双向同步:URL 是单一事实来源
+watch(() => current.value.week, (w) => {
+  const cur = week.value || ''
+  if (w !== cur) setWeek(w || null)
+}, { immediate: false })
+
+const { admins: adminsMap, reload: reloadAdmins } = useAdmins()
 
 const isAdminish = computed(() => {
   if (!me.value) return false
@@ -66,7 +69,7 @@ const navItems = computed(() => {
   return base
 })
 
-function nav(view) { pushView({ view }) }
+function nav(view) { pushView({ view, week: current.value.week }) }
 
 const loginError = ref('')
 const loginPending = ref(false)
@@ -92,7 +95,12 @@ onMounted(async () => {
   try { await handleCallbackIfPresent() } catch (e) { loginError.value = e.message || '登录失败' }
   await refreshAuth()
   if (me.value?.open_id) {
-    await refresh()
+    // 若 URL 已带 ?week=,先同步到 useDashboard 再触发首次加载,避免拉两次
+    if (current.value.week && !week.value) {
+      setWeek(current.value.week)
+    } else {
+      await refresh()
+    }
     await reloadAdmins()
     startSSE()
   }
@@ -112,7 +120,7 @@ onMounted(async () => {
   </div>
   <div v-else class="layout">
     <header class="topbar">
-      <div class="brand" v-tooltip="'PMD · 产品线项目看板'">📊 PMD</div>
+      <div class="brand" v-tooltip="'PMD · 产品线项目看板'"><span class="brand-emoji">📊</span><span class="brand-text">PMD</span></div>
       <nav>
         <button
           v-for="n in navItems"
@@ -150,16 +158,36 @@ onMounted(async () => {
 <style scoped>
 .layout { min-height: 100vh; display: flex; flex-direction: column; }
 .topbar {
-  display: flex; align-items: center; gap: 16px;
-  padding: 8px 24px;
+  display: flex; align-items: center; gap: 18px;
+  padding: 10px 24px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
 }
-.brand { font-weight: 600; font-size: 16px; }
-nav { display: flex; gap: 6px; flex: 1; }
+.brand { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 16px; letter-spacing: -0.2px; }
+.brand-emoji { font-size: 16px; }
+.brand-text {
+  background: linear-gradient(135deg, var(--accent), #0ea5e9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+nav { display: flex; gap: 4px; flex: 1; }
+nav button { font-weight: 500; }
 .right { display: flex; gap: 12px; align-items: center; }
-.user { font-size: 13px; color: var(--text-muted); }
-.user em { font-style: normal; color: var(--accent); margin-left: 4px; }
+.user {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+  border: 1px solid var(--border-subtle);
+}
+.user em { font-style: normal; color: var(--accent); margin-left: 4px; font-weight: 600; }
 main { flex: 1; }
 
 .login-screen {

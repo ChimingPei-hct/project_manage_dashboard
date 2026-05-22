@@ -5,23 +5,42 @@
 */
 
 :root {
-  --status-green: #52c41a;
-  --status-yellow: #faad14;
-  --status-red: #f5222d;
-  --status-gray: #d9d9d9;
+  /* 状态色:design/12 红线,严禁替换语义,只可微调亮度 */
+  --status-green: #16a34a;
+  --status-yellow: #d97706;
+  --status-red: #dc2626;
+  --status-gray: #cbd5e1;
+  --status-green-bg: rgba(22,163,74,0.10);
+  --status-yellow-bg: rgba(217,119,6,0.10);
+  --status-red-bg: rgba(220,38,38,0.10);
 
-  --bg: #f5f7fa;
+  /* 表面与文字 — 借鉴 oversea 清透专业风,但圆角守 6px */
+  --bg: #f5f7fb;
+  --bg-elevated: #fbfcfe;
   --panel: #ffffff;
-  --border: #e5e7eb;
-  --text: #1f2937;
-  --text-muted: #6b7280;
-  --accent: #2563eb;
+  --panel-soft: #f8fafc;
+  --border: #e5e9f0;
+  --border-subtle: #eef1f6;
+  --text: #1a1f36;
+  --text-muted: #5e6c84;
+  --text-dim: #97a4b7;
+  --accent: #4f6ef7;
+  --accent-hover: #3b5de5;
+  --accent-soft: rgba(79,110,247,0.08);
+  --accent-glow: rgba(79,110,247,0.18);
+
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.04), 0 1px 2px rgba(15,23,42,0.02);
+  --shadow-md: 0 4px 16px rgba(15,23,42,0.06), 0 1px 3px rgba(15,23,42,0.04);
+  --shadow-lg: 0 8px 32px rgba(15,23,42,0.08), 0 2px 8px rgba(15,23,42,0.04);
 
   --radius: 6px;
   --radius-sm: 4px;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
-               "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'PingFang SC', 'Hiragino Sans GB',
+               "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
@@ -30,24 +49,36 @@ body {
   font-family: var(--font-sans);
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* 自定义滚动条 — 与 oversea 风格对齐 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(79,110,247,0.15); border-radius: var(--radius); }
+::-webkit-scrollbar-thumb:hover { background: rgba(79,110,247,0.28); }
 
 #app { min-height: 100vh; }
 
 button {
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--panel);
+  color: var(--text);
   cursor: pointer;
   padding: 6px 12px;
   font-family: inherit;
   font-size: 13px;
+  transition: all var(--transition);
 }
-button:hover { border-color: var(--accent); color: var(--accent); }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+button:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent); box-shadow: 0 1px 2px var(--accent-glow); }
+button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: #fff; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:disabled:hover { border-color: var(--border); color: var(--text); background: var(--panel); }
 
 input, select, textarea {
   border-radius: var(--radius);
@@ -55,9 +86,15 @@ input, select, textarea {
   padding: 6px 10px;
   font-family: inherit;
   font-size: 13px;
+  background: var(--panel);
+  color: var(--text);
   outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
-input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 
 a { color: var(--accent); text-decoration: none; }
 
@@ -78,11 +115,19 @@ a { color: var(--accent); text-decoration: none; }
 
 /* 历史周只读 banner */
 .banner-readonly {
-  background: #fff7e6;
-  border: 1px solid #ffd591;
-  color: #ad6800;
+  background: var(--status-yellow-bg);
+  border: 1px solid rgba(217,119,6,0.30);
+  color: var(--status-yellow);
   padding: 8px 14px;
   border-radius: var(--radius);
   margin: 12px 24px;
   font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.banner-readonly::before {
+  content: '⏱';
+  font-size: 14px;
 }

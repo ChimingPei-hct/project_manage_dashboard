@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# PMD pre-commit:在 main 分支拦截任何实例数据提交
+# 见 design/03-代码与数据分离约束.md §8
+#
+# 安装:在仓库根执行
+#   git config core.hooksPath .githooks
+
+set -e
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+
+if [ "$branch" != "main" ]; then
+  exit 0
+fi
+
+# main 分支:design/ 下不允许出现任何 *.json / *.jsonl / weekly_snapshots/
+violations=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E '^design/(.+\.(json|jsonl)|weekly_snapshots/)' || true)
+
+if [ -n "$violations" ]; then
+  echo "✘ pre-commit blocked:main 分支禁止携带实例数据" >&2
+  echo "" >&2
+  echo "以下文件违反 design/03 §1.3(main 只存代码 + 空模板)与 §8(本钩子):" >&2
+  echo "$violations" | sed 's/^/  - /' >&2
+  echo "" >&2
+  echo "处置方式:" >&2
+  echo "  1. 这些文件应该提交到对应实例的 data-<pdt> 分支(worktree)" >&2
+  echo "  2. 若误暂存:git reset HEAD <file>" >&2
+  echo "  3. 若确实是空模板需求:请先更新 design/03 §1.3 列出该模板,再绕过钩子" >&2
+  exit 1
+fi

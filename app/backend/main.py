@@ -103,6 +103,7 @@ _LOCKS: dict[str, int] = {
     "updates": _lock_fd("updates"),
     "snapshots": _lock_fd("snapshots"),
     "admins": _lock_fd("admins"),
+    "config": _lock_fd("config"),
 }
 
 
@@ -897,13 +898,19 @@ def api_get_snapshot(week: str):
     return json.loads(p.read_text(encoding="utf-8"))
 
 
-@app.post("/api/snapshots/freeze")
-async def api_freeze_snapshot(request: Request, week: str | None = None, force: bool = False):
-    oid = current_open_id(request)
-    if not can_freeze_snapshot(oid):
-        raise HTTPException(403, "forbidden")
-    if force and not can_force_freeze(oid):
-        raise HTTPException(403, "only super can force freeze")
+async def _freeze_snapshot(
+    week: str | None,
+    *,
+    frozen_by: str,
+    trigger: str,
+    force: bool,
+) -> dict:
+    """Freeze the given (or current) ISO week into a snapshot file.
+
+    被手动端点和定时任务共同复用。约束:design/09。
+    返回 {"week": ..., "ok": True}。
+    Raises HTTPException 409 当文件已存在且 force=False。
+    """
     week_str = week or _iso_week_str()
     p = _snapshot_path(week_str)
     if p.exists() and not force:
@@ -912,8 +919,8 @@ async def api_freeze_snapshot(request: Request, week: str | None = None, force: 
         snap = {
             "week": week_str,
             "frozen_at": now_iso(),
-            "frozen_by": oid,
-            "trigger": "manual",
+            "frozen_by": frozen_by,
+            "trigger": trigger,
             "pdt": read_pdt(),
             "ltcs": read_ltcs(),
             "modules": read_modules(),
@@ -926,6 +933,146 @@ async def api_freeze_snapshot(request: Request, week: str | None = None, force: 
         os.replace(tmp, p)
     await _broadcast("snapshot:created", {"week": week_str})
     return {"week": week_str, "ok": True}
+
+
+@app.post("/api/snapshots/freeze")
+async def api_freeze_snapshot(request: Request, week: str | None = None, force: bool = False):
+    oid = current_open_id(request)
+    if not can_freeze_snapshot(oid):
+        raise HTTPException(403, "forbidden")
+    if force and not can_force_freeze(oid):
+        raise HTTPException(403, "only super can force freeze")
+    return await _freeze_snapshot(week, frozen_by=oid, trigger="manual", force=force)
+
+
+# ---------------------------------------------------------------------------
+# 自动周快照(design/09 §6.1)
+# ---------------------------------------------------------------------------
+
+AUTO_FREEZE_DEFAULTS = {"enabled": False, "weekday": 4, "hour": 18, "minute": 0}
+
+
+def _auto_freeze_cfg() -> dict:
+    """读 config.json.auto_freeze,字段缺失时用默认值兜底。"""
+    cfg = read_instance_config().get("auto_freeze") or {}
+    out = dict(AUTO_FREEZE_DEFAULTS)
+    for k in ("enabled", "weekday", "hour", "minute"):
+        if k in cfg:
+            out[k] = cfg[k]
+    # 数值范围兜底
+    out["weekday"] = max(0, min(6, int(out["weekday"])))
+    out["hour"] = max(0, min(23, int(out["hour"])))
+    out["minute"] = max(0, min(59, int(out["minute"])))
+    out["enabled"] = bool(out["enabled"])
+    return out
+
+
+def _next_auto_freeze_dt(now: datetime, cfg: dict) -> datetime:
+    """计算下次自动冻结的 CN_TZ 时间。"""
+    target_w = cfg["weekday"]
+    days = (target_w - now.weekday()) % 7
+    candidate = now.replace(hour=cfg["hour"], minute=cfg["minute"], second=0, microsecond=0) + timedelta(days=days)
+    if candidate <= now:
+        candidate += timedelta(days=7)
+    return candidate
+
+
+@app.get("/api/config/auto_freeze")
+def api_get_auto_freeze(request: Request):
+    cfg = _auto_freeze_cfg()
+    now = datetime.now(CN_TZ)
+    return {
+        **cfg,
+        "next_run_at": _next_auto_freeze_dt(now, cfg).isoformat() if cfg["enabled"] else None,
+    }
+
+
+@app.put("/api/config/auto_freeze")
+async def api_put_auto_freeze(request: Request):
+    oid = current_open_id(request)
+    if not is_super(oid):
+        raise HTTPException(403, "forbidden")
+    body = await request.json()
+    incoming = {}
+    for k in ("enabled", "weekday", "hour", "minute"):
+        if k in body:
+            incoming[k] = body[k]
+    # 字段校验
+    try:
+        if "enabled" in incoming:
+            incoming["enabled"] = bool(incoming["enabled"])
+        if "weekday" in incoming and not (0 <= int(incoming["weekday"]) <= 6):
+            raise ValueError("weekday must be 0..6")
+        if "hour" in incoming and not (0 <= int(incoming["hour"]) <= 23):
+            raise ValueError("hour must be 0..23")
+        if "minute" in incoming and not (0 <= int(incoming["minute"]) <= 59):
+            raise ValueError("minute must be 0..59")
+    except (ValueError, TypeError) as e:
+        raise HTTPException(422, f"invalid auto_freeze config: {e}")
+    with _FileLock("config"):
+        cfg = read_instance_config()
+        merged = {**(cfg.get("auto_freeze") or {}), **incoming}
+        cfg["auto_freeze"] = merged
+        _write_json_atomic("config.json", cfg)
+    await _broadcast("config:reload", {"kind": "auto_freeze"})
+    return _auto_freeze_cfg()
+
+
+_auto_freeze_task: asyncio.Task | None = None
+
+
+async def _auto_freeze_loop() -> None:
+    """后台循环:按 config.auto_freeze 调度冻结。
+
+    每 60s 检查一次"是否到达 weekday=H:M 且当周尚未冻结"。
+    最小化复杂度,不依赖外部 cron 库。
+    """
+    while True:
+        try:
+            cfg = _auto_freeze_cfg()
+            if cfg["enabled"]:
+                now = datetime.now(CN_TZ)
+                # 触发窗口:当前是目标 weekday 且 (h, m) 已到 且当周未冻结
+                if (
+                    now.weekday() == cfg["weekday"]
+                    and (now.hour, now.minute) >= (cfg["hour"], cfg["minute"])
+                ):
+                    week_str = _iso_week_str(now)
+                    if not _snapshot_path(week_str).exists():
+                        try:
+                            await _freeze_snapshot(
+                                week_str,
+                                frozen_by="system:auto",
+                                trigger="auto",
+                                force=False,
+                            )
+                        except HTTPException:
+                            pass  # 同周已存在
+                        except Exception:  # pragma: no cover
+                            pass
+        except Exception:  # pragma: no cover
+            pass
+        await asyncio.sleep(60)
+
+
+@app.on_event("startup")
+async def _on_startup_scheduler() -> None:
+    global _auto_freeze_task
+    if os.environ.get("PMD_DISABLE_SCHEDULER") == "1":
+        return  # 测试场景显式关闭
+    if _auto_freeze_task is None or _auto_freeze_task.done():
+        _auto_freeze_task = asyncio.create_task(_auto_freeze_loop())
+
+
+@app.on_event("shutdown")
+async def _on_shutdown_scheduler() -> None:
+    global _auto_freeze_task
+    if _auto_freeze_task and not _auto_freeze_task.done():
+        _auto_freeze_task.cancel()
+        try:
+            await _auto_freeze_task
+        except (asyncio.CancelledError, Exception):  # pragma: no cover
+            pass
 
 
 # ---------------------------------------------------------------------------

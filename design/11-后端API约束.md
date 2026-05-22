@@ -174,6 +174,10 @@ GET    /api/snapshots                     # 列表 (元数据)
 GET    /api/snapshots/{week}              # ?week=2026-W21 详情
 POST   /api/snapshots/freeze              # body: {week?, force?}
 
+# 自动冻结(后台 asyncio scheduler;design/09 §6.1)
+GET    /api/config/auto_freeze            # 所有已登录角色可读;返 {enabled, weekday, hour, minute, next_run_at}
+PUT    /api/config/auto_freeze            # 仅 Super;支持部分字段更新;422 校验范围
+
 # 用户与权限
 GET    /api/users/search                  # ?q=&limit=  v1 数据源 user_registry.json,v2 接飞书 contact_cache
 GET    /api/admins

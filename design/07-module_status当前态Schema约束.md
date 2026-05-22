@@ -75,6 +75,7 @@
   - `module_color != "green"` 时必填
   - 任一 `sub_items_color[*] != "green"` 时必填
 - 都为绿时可空
+- **前端兜底校验位置**:`StatusEditDialog.vue` 的 `noteMissing` 计算属性 —— 弹窗内任一色变为非绿即在文本域下方红字提示且禁用「保存」按钮;不依赖 422 才提示。后端 422 仍然兜底,前端收到时 inline 显示 `payload.detail`
 
 ### 5.6 `updated_by`
 

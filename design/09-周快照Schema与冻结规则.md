@@ -59,9 +59,22 @@ main 模板:`weekly_snapshots/` 空目录(可保留 `.gitkeep`)。
 
 ### 6.1 自动冻结
 
-- 每周五 18:00(实例时区,默认 Asia/Shanghai)
-- 由后端定时任务触发(`trigger="auto"`,`frozen_by="system"`)
+- 默认时间:每周五 18:00(实例时区固定 Asia/Shanghai = `CN_TZ`,UTC+8)
+- 由后端 FastAPI lifespan 启动的后台 `asyncio.Task` 每 60s 巡检触发,`frozen_by="system:auto"`,`trigger="auto"`
 - 若该周已存在快照,**不覆盖**,跳过(避免重复)
+- **可配置**:`DATA_DIR/config.json` 的 `auto_freeze` 子对象:
+  ```jsonc
+  {
+    "auto_freeze": {
+      "enabled": false,    // 默认关闭,需 Super 显式启用
+      "weekday": 4,        // 0=周一 .. 6=周日(Python ISO);4=周五
+      "hour": 18,          // 0..23,实例时区
+      "minute": 0          // 0..59
+    }
+  }
+  ```
+- **运维开关**:环境变量 `PMD_DISABLE_SCHEDULER=1` 完全跳过启动调度器(供测试 / 维护用)
+- **端点**:`GET /api/config/auto_freeze` 任意已登录角色可读,返回当前配置 + 计算出的 `next_run_at`;`PUT /api/config/auto_freeze` 仅 Super,支持部分字段更新,422 校验范围
 
 ### 6.2 手动冻结
 
@@ -78,6 +91,8 @@ main 模板:`weekly_snapshots/` 空目录(可保留 `.gitkeep`)。
 - 冻结后的快照文件**只读**,不允许 in-place 修改
 - "修正历史快照"= 删除该文件并重新 freeze(留下审计记录 `metadata.replaced_by` / `replaced_at`)
 - 前端切换到历史周时:数据全部从快照拉取,Owner 的填报入口禁用,UI 显示"历史周(只读)"banner
+- **前端 URL 协议**:`?week=YYYY-Www`(如 `?week=2026-W21`),格式校验在 `useView.parseView`;不合法的 week 参数会被忽略,等同于"当前周"
+- 冻结成功后端发 SSE `snapshot:created`,WeekSwitcher 与 SnapshotPanel 自动刷新列表,无需手动重载页面
 
 ## 8. 与历史流的关系
 

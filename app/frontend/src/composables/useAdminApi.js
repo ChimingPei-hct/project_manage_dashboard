@@ -30,6 +30,10 @@ export const adminApi = {
     return api.post(`/api/snapshots/freeze?${qs.toString()}`)
   },
 
+  // Auto-freeze config
+  getAutoFreeze: () => api.get('/api/config/auto_freeze'),
+  updateAutoFreeze: (body) => api.put('/api/config/auto_freeze', body),
+
   // Seed
   seedDemo: () => api.post('/api/seed/demo'),
 }
