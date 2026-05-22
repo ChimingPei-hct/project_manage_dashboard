@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "pinyin-pro": "^3.28.1",
     "vue": "^3.4.0"
   },
   "devDependencies": {
