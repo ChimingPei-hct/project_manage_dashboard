@@ -10,7 +10,7 @@ const { ltcs, status, modulesByScope } = useDashboard()
 const { current, pushView } = useView()
 const { canEdit } = useEditableModules()
 
-const ltcId = computed(() => current.value.ltc || ltcs.value[0]?.id || '')
+const ltcId = computed(() => current.value.id || ltcs.value[0]?.id || '')
 const ltc = computed(() => ltcs.value.find(l => l.id === ltcId.value))
 
 function colorOf(m) { return status.value?.[m.id]?.module_color || 'gray' }

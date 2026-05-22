@@ -34,7 +34,7 @@ function hasMismatch(m) {
 }
 
 function changeLtc(e) { pushView({ view: 'ltc', id: e.target.value }) }
-function goRisks() { pushView({ view: 'risks', ltc: currentLtcId.value }) }
+function goRisks() { pushView({ view: 'risks', id: currentLtcId.value }) }
 
 const editing = ref(null)
 const focusSubId = ref('')

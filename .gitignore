@@ -37,3 +37,4 @@ app/frontend.log
 # Dev 截图基线(本地参考用,不入仓)
 /baseline-*.png
 /phase*-*.png
+/luna6-*.png

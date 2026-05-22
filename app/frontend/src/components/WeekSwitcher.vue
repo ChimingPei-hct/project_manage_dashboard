@@ -16,7 +16,7 @@ async function loadList() {
 function onChange(e) {
   const w = e.target.value || ''
   // 单一事实来源 = URL;App.vue 的 watcher 会同步到 useDashboard
-  pushView({ view: current.value.view, id: current.value.id, ltc: current.value.ltc, week: w })
+  pushView({ view: current.value.view, id: current.value.id, week: w })
 }
 
 let off = null
