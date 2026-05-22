@@ -83,9 +83,11 @@ project_manage_dashboard/
 │   ├── backend/     # FastAPI 单文件 main.py
 │   └── frontend/    # Vue 3 + Vite
 ├── datas/           # 原始参考资料(PPT 截图等),不入产品
-├── 系统/            # 更新日志、环境问题、灵光捕手
+├── 系统/            # 全局进展、更新日志、环境问题、灵光捕手
 └── start.sh
 ```
+
+**当前进度的单一事实来源:`系统/全局进展.md`**。开始任何新阶段前必读;完成阶段后必须先更新它再 commit。
 
 ## 代码与数据分离
 
