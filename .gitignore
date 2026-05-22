@@ -1,0 +1,33 @@
+.DS_Store
+datas/
+doc/
+pmd-instances/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Secrets / runtime
+.jwt_secret
+.env
+.env.local
+*.log
+.backend.pid
+.frontend.pid
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Playwright
+.playwright-mcp/
