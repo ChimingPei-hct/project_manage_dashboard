@@ -211,7 +211,8 @@ def read_ltc_admins() -> dict[str, list[str]]:
 # ---------------------------------------------------------------------------
 
 def now_iso() -> str:
-    return datetime.now(CN_TZ).isoformat(timespec="seconds")
+    # microseconds 精度,防止同一秒多次写入时 history 排序不稳
+    return datetime.now(CN_TZ).isoformat(timespec="microseconds")
 
 
 def new_id(prefix: str = "upd") -> str:
@@ -540,26 +541,30 @@ def api_get_modules(scope: str | None = None, ltc_id: str | None = None):
 
 
 def _check_create_module_perm(oid: str, body: dict) -> None:
+    """先做字段校验(422),通过后再判断权限(403)。
+
+    422 早于 403:body 不合法时无论谁来都返 422,避免攻击者用 403 探测端点形态。
+    """
     scope = body.get("scope")
+    if scope not in VALID_SCOPES:
+        raise HTTPException(422, "invalid scope")
+    if scope == "ltc" and not body.get("ltc_id"):
+        raise HTTPException(422, "ltc_id required for scope=ltc")
     if scope == "pdt":
         if not is_pdt_admin(oid):
             raise HTTPException(403, "forbidden")
-    elif scope == "ltc":
-        if not is_ltc_admin(oid, body.get("ltc_id")):
-            raise HTTPException(403, "forbidden")
     else:
-        raise HTTPException(422, "invalid scope")
+        if not is_ltc_admin(oid, body["ltc_id"]):
+            raise HTTPException(403, "forbidden")
 
 
 @app.post("/api/modules")
 async def api_create_module(request: Request):
     oid = current_open_id(request)
     body = await request.json()
-    _check_create_module_perm(oid, body)
     if not body.get("id") or not body.get("name") or not body.get("group"):
         raise HTTPException(422, "id/name/group required")
-    if body["scope"] == "ltc" and not body.get("ltc_id"):
-        raise HTTPException(422, "ltc_id required for scope=ltc")
+    _check_create_module_perm(oid, body)
     with _FileLock("modules"):
         rows = read_modules()
         if any(r["id"] == body["id"] for r in rows):
@@ -717,7 +722,8 @@ def api_get_status_history(module_id: str, limit: int = 50, before_ts: str | Non
     rows = [r for r in _read_jsonl("module_updates.jsonl") if r.get("module_id") == module_id]
     if before_ts:
         rows = [r for r in rows if r.get("ts", "") < before_ts]
-    rows.sort(key=lambda r: r.get("ts", ""), reverse=True)
+    # (ts, id) 双键保证同时间戳下稳定;id 单调(含时间戳前缀)
+    rows.sort(key=lambda r: (r.get("ts", ""), r.get("id", "")), reverse=True)
     return rows[: max(1, min(limit, 500))]
 
 
@@ -795,17 +801,88 @@ async def api_freeze_snapshot(request: Request, week: str | None = None, force: 
 
 
 # ---------------------------------------------------------------------------
+# 示例数据(空实例 onboarding 用)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/seed/demo")
+async def api_seed_demo(request: Request):
+    """Super Admin 一键填示例数据,空实例 onboarding 用。"""
+    oid = current_open_id(request)
+    if not is_super(oid):
+        raise HTTPException(403, "forbidden")
+    with _FileLock("pdt", "ltcs", "modules", "status"):
+        if read_ltcs() or read_modules():
+            raise HTTPException(409, "instance already has data; refuse to overwrite")
+        ltc_id = uuid.uuid4().hex
+        pdt_mod_id = uuid.uuid4().hex
+        ltc_mod1_id = uuid.uuid4().hex
+        ltc_mod2_id = uuid.uuid4().hex
+        sub1 = uuid.uuid4().hex[:12]
+        sub2 = uuid.uuid4().hex[:12]
+        ts = now_iso()
+        write_pdt({
+            "code": "demo",
+            "name": "PMD 示例产品线",
+            "description": "由 /api/seed/demo 自动创建,演示与 onboarding 用",
+            "milestones": [
+                {"name": "技术评审 TR4", "date": "2026-06-15", "type": "TR", "note": ""},
+                {"name": "A 点 SOP", "date": "2026-09-30", "type": "SOP", "note": ""},
+            ],
+            "updated_at": ts,
+            "metadata": {"seeded": True},
+        })
+        write_ltcs([{
+            "id": ltc_id, "name": "示例子项目", "order": 1, "archived": False,
+            "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
+        }])
+        write_modules([
+            {
+                "id": pdt_mod_id, "scope": "pdt", "ltc_id": None,
+                "group": "质量", "name": "质量总览", "order": 1,
+                "owner_open_id": None,
+                "kpi_fields": [{"key": "bug_close_rate", "label": "Bug 闭环率", "hint": ""}],
+                "sub_items": [],
+                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
+            },
+            {
+                "id": ltc_mod1_id, "scope": "ltc", "ltc_id": ltc_id,
+                "group": "硬件和底软", "name": "MCU 底软", "order": 1,
+                "owner_open_id": None, "kpi_fields": [],
+                "sub_items": [
+                    {"id": sub1, "name": "Autosar BSW", "order": 1},
+                    {"id": sub2, "name": "RTE", "order": 2},
+                ],
+                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
+            },
+            {
+                "id": ltc_mod2_id, "scope": "ltc", "ltc_id": ltc_id,
+                "group": "感知算法", "name": "示例感知模块", "order": 1,
+                "owner_open_id": None, "kpi_fields": [], "sub_items": [],
+                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
+            },
+        ])
+        write_status({})
+    await _broadcast("config:reload", {"kind": "seed"})
+    return {"ok": True, "ltc_id": ltc_id}
+
+
+# ---------------------------------------------------------------------------
 # 用户与管理员
 # ---------------------------------------------------------------------------
 
 @app.get("/api/users/search")
-def api_users_search(q: str = ""):
-    # v1 占位:返回 user_registry 简单过滤;真实场景接飞书通讯录
+def api_users_search(q: str = "", limit: int = 200):
+    """前端 UserSearchInput 走拼音前端过滤,这里 q 为空时直接返全量(受 limit 上限)。
+
+    数据源 v1:user_registry.json 手动维护;v2 可接飞书通讯录 contact_cache。
+    """
     users = _read_json("user_registry.json", [])
+    limit = max(1, min(limit, 2000))
     if not q:
-        return users[:20]
+        return users[:limit]
     needle = q.lower()
-    return [u for u in users if needle in (u.get("name", "") + u.get("open_id", "")).lower()][:20]
+    matched = [u for u in users if needle in (u.get("name", "") + u.get("open_id", "")).lower()]
+    return matched[:limit]
 
 
 @app.get("/api/admins")
