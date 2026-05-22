@@ -20,6 +20,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+import urllib.parse
+
+import httpx
 import jwt
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,6 +66,18 @@ JWT_RENEW_WINDOW = timedelta(days=7)
 PORT = int(os.environ.get("PORT", "18080"))
 COOKIE_NAME = f"pmd_token_{PORT}"
 COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "0") == "1"
+
+# 飞书 OAuth(design/11 §6.1)
+# 优先读 FEISHU_*,回退 LARK_*(兼容复用 lark-cli 的现有 app 凭证)
+FEISHU_APP_ID = os.environ.get("FEISHU_APP_ID") or os.environ.get("LARK_APP_ID") or ""
+FEISHU_APP_SECRET = os.environ.get("FEISHU_APP_SECRET") or os.environ.get("LARK_APP_SECRET") or ""
+FEISHU_OAUTH_DEFAULT_REDIRECT = os.environ.get(
+    "FEISHU_REDIRECT_URI", "http://localhost:15173/feishu/callback"
+)
+_FEISHU_AUTHORIZE = "https://open.feishu.cn/open-apis/authen/v1/authorize"
+_FEISHU_APP_TOKEN = "https://open.feishu.cn/open-apis/auth/v3/app_access_token/internal"
+_FEISHU_OIDC_ACCESS_TOKEN = "https://open.feishu.cn/open-apis/authen/v1/oidc/access_token"
+_FEISHU_USER_INFO = "https://open.feishu.cn/open-apis/authen/v1/user_info"
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +219,38 @@ def read_pdt_admins() -> list[str]:
 
 def read_ltc_admins() -> dict[str, list[str]]:
     return _read_json("ltc_admins.json", {})
+
+
+def read_instance_config() -> dict:
+    """读 DATA_DIR/config.json,返回部署配置(见 design/03 §4.2)。"""
+    return _read_json("config.json", {})
+
+
+def _upsert_user_registry(open_id: str, name: str, avatar_url: str = "") -> None:
+    """飞书首次登录时把用户写进 user_registry.json,供 /api/users/search 使用。
+
+    幂等:同 open_id 已存在则只更新 name/avatar,不覆盖其他字段。
+    """
+    if not open_id:
+        return
+    with _FileLock("admins"):  # 共用 admins 锁,避免新加锁名
+        users = _read_json("user_registry.json", [])
+        for u in users:
+            if u.get("open_id") == open_id:
+                if name:
+                    u["name"] = name
+                if avatar_url:
+                    u["avatar_url"] = avatar_url
+                u["last_login"] = now_iso()
+                break
+        else:
+            users.append({
+                "open_id": open_id,
+                "name": name or open_id,
+                "avatar_url": avatar_url,
+                "last_login": now_iso(),
+            })
+        _write_json_atomic("user_registry.json", users)
 
 
 # ---------------------------------------------------------------------------
@@ -405,6 +452,7 @@ def api_me(request: Request):
         "is_super": is_super(request.state.open_id),
         "is_pdt_admin": is_pdt_admin(request.state.open_id),
         "dev_login": DEV_LOGIN,
+        "feishu_configured": bool(FEISHU_APP_ID and FEISHU_APP_SECRET),
     }
 
 
@@ -414,15 +462,95 @@ def api_logout(response: Response):
     return {"ok": True}
 
 
+def _feishu_app_access_token() -> str:
+    """换企业自建应用的 app_access_token。"""
+    if not FEISHU_APP_ID or not FEISHU_APP_SECRET:
+        raise HTTPException(501, detail={"detail": "feishu oauth not configured", "code": "feishu_disabled"})
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            r = client.post(_FEISHU_APP_TOKEN, json={"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET})
+        data = r.json()
+    except Exception as e:  # pragma: no cover  网络异常
+        raise HTTPException(502, detail={"detail": f"feishu app_token network: {e}", "code": "feishu_upstream"})
+    if data.get("code") != 0:
+        raise HTTPException(502, detail={"detail": f"feishu app_token: {data.get('msg')}", "code": "feishu_upstream"})
+    return data["app_access_token"]
+
+
+def _feishu_user_info_from_code(code: str) -> dict:
+    """code → user_access_token → user_info。返回 dict 含 open_id/name/avatar_url/tenant_key。"""
+    app_token = _feishu_app_access_token()
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            r1 = client.post(
+                _FEISHU_OIDC_ACCESS_TOKEN,
+                json={"grant_type": "authorization_code", "code": code},
+                headers={"Authorization": f"Bearer {app_token}"},
+            )
+            d1 = r1.json()
+            if d1.get("code") != 0:
+                raise HTTPException(502, detail={"detail": f"feishu code→token: {d1.get('msg')}", "code": "feishu_upstream"})
+            user_access_token = d1["data"]["access_token"]
+            r2 = client.get(
+                _FEISHU_USER_INFO,
+                headers={"Authorization": f"Bearer {user_access_token}"},
+            )
+            d2 = r2.json()
+            if d2.get("code") != 0:
+                raise HTTPException(502, detail={"detail": f"feishu user_info: {d2.get('msg')}", "code": "feishu_upstream"})
+    except HTTPException:
+        raise
+    except Exception as e:  # pragma: no cover
+        raise HTTPException(502, detail={"detail": f"feishu network: {e}", "code": "feishu_upstream"})
+    return d2["data"]
+
+
 @app.get("/api/feishu/login_url")
-def api_feishu_login_url():
-    # 骨架阶段不接真飞书,后续阶段实现
-    raise HTTPException(501, detail={"detail": "feishu oauth not configured", "code": "feishu_disabled"})
+def api_feishu_login_url(redirect_uri: str | None = None, state: str | None = None):
+    """构造飞书授权 URL,前端拿到后 window.location.href 过去。"""
+    if not FEISHU_APP_ID:
+        raise HTTPException(501, detail={"detail": "feishu oauth not configured", "code": "feishu_disabled"})
+    redirect = redirect_uri or FEISHU_OAUTH_DEFAULT_REDIRECT
+    st = state or secrets.token_urlsafe(16)
+    url = (
+        f"{_FEISHU_AUTHORIZE}"
+        f"?app_id={FEISHU_APP_ID}"
+        f"&redirect_uri={urllib.parse.quote(redirect, safe='')}"
+        f"&response_type=code"
+        f"&state={st}"
+    )
+    return {"login_url": url, "state": st}
 
 
 @app.post("/api/feishu/callback")
-def api_feishu_callback():
-    raise HTTPException(501, detail={"detail": "feishu oauth not configured", "code": "feishu_disabled"})
+async def api_feishu_callback(request: Request, response: Response):
+    """收 code → 换用户信息 → 校验 tenant 白名单 → 签 JWT 写 cookie。"""
+    body = await request.json()
+    code = (body.get("code") or "").strip()
+    if not code:
+        raise HTTPException(400, detail={"detail": "code required", "code": "code_missing"})
+
+    info = _feishu_user_info_from_code(code)
+    open_id = info.get("open_id") or ""
+    if not open_id:
+        raise HTTPException(502, detail={"detail": "feishu user_info missing open_id", "code": "feishu_upstream"})
+    name = info.get("name") or ""
+    avatar_url = info.get("avatar_url") or ""
+    tenant_key = info.get("tenant_key") or ""
+
+    # 租户白名单(允许空 = 暂不限制,详见 design/03 §4.2 + design/10)
+    allowed = read_instance_config().get("allowed_tenant_keys") or []
+    if allowed and tenant_key not in allowed:
+        raise HTTPException(403, detail={"detail": "tenant not allowed", "code": "tenant_forbidden"})
+
+    _upsert_user_registry(open_id, name, avatar_url)
+
+    token = _create_jwt(open_id, name, avatar_url)
+    response.set_cookie(
+        COOKIE_NAME, token, max_age=int(JWT_TTL.total_seconds()),
+        httponly=True, secure=COOKIE_SECURE, samesite="lax", path="/",
+    )
+    return {"open_id": open_id, "name": name, "avatar_url": avatar_url, "tenant_key": tenant_key}
 
 
 # ---------------------------------------------------------------------------

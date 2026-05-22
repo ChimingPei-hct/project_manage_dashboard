@@ -4,6 +4,7 @@ import { useAuth } from './composables/useAuth.js'
 import { useDashboard } from './composables/useDashboard.js'
 import { useView } from './composables/useView.js'
 import { adminApi } from './composables/useAdminApi.js'
+import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogin.js'
 import { api } from './api/client.js'
 import PdtOverview from './components/PdtOverview.vue'
 import LtcProgress from './components/LtcProgress.vue'
@@ -67,16 +68,49 @@ const navItems = computed(() => {
 
 function nav(view) { pushView({ view }) }
 
+const loginError = ref('')
+const loginPending = ref(false)
+
+const needLogin = computed(() => {
+  // 已加载 me 且没有 open_id,后端有飞书凭证 → 显示登录页
+  if (!me.value) return false
+  if (me.value.open_id) return false
+  return !!me.value.feishu_configured
+})
+
+async function clickLogin() {
+  loginPending.value = true
+  loginError.value = ''
+  try { await startLogin() } catch (e) {
+    loginError.value = e.message || '飞书登录跳转失败'
+    loginPending.value = false
+  }
+}
+
 onMounted(async () => {
+  // 先处理 /feishu/callback?code=... 回调(若不在此路径则 no-op)
+  try { await handleCallbackIfPresent() } catch (e) { loginError.value = e.message || '登录失败' }
   await refreshAuth()
-  await refresh()
-  await reloadAdmins()
-  startSSE()
+  if (me.value?.open_id) {
+    await refresh()
+    await reloadAdmins()
+    startSSE()
+  }
 })
 </script>
 
 <template>
-  <div class="layout">
+  <div v-if="needLogin" class="login-screen">
+    <div class="login-card">
+      <h1>📊 PMD 项目看板</h1>
+      <p class="muted">使用飞书账号登录</p>
+      <button class="primary" :disabled="loginPending" v-tooltip="'跳转到飞书授权页'" @click="clickLogin">
+        {{ loginPending ? '跳转中…' : '飞书登录' }}
+      </button>
+      <p v-if="loginError" class="err">{{ loginError }}</p>
+    </div>
+  </div>
+  <div v-else class="layout">
     <header class="topbar">
       <div class="brand" v-tooltip="'PMD · 产品线项目看板'">📊 PMD</div>
       <nav>
@@ -127,4 +161,23 @@ nav { display: flex; gap: 6px; flex: 1; }
 .user { font-size: 13px; color: var(--text-muted); }
 .user em { font-style: normal; color: var(--accent); margin-left: 4px; }
 main { flex: 1; }
+
+.login-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg, #f5f7fa);
+}
+.login-card {
+  background: var(--panel, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 36px 40px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.login-card h1 { font-size: 20px; margin: 0 0 8px; }
+.login-card .muted { color: var(--text-muted, #6b7280); font-size: 13px; margin: 0 0 20px; }
+.login-card button { width: 100%; padding: 10px; border-radius: 6px; }
+.login-card .err { color: var(--status-red, #f5222d); font-size: 12px; margin-top: 12px; }
 </style>

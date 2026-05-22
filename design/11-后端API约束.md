@@ -81,10 +81,34 @@ broadcast_sse("status:reload")
 
 ### 6.1 飞书 OAuth
 
-- `GET /api/feishu/login_url` 返回飞书授权 URL
-- `POST /api/feishu/callback` 收 `code` → 换 `access_token` → 拉用户信息 → 签发 JWT
+**端点**
+
+- `GET /api/feishu/login_url?redirect_uri=&state=` → `{ login_url, state }`,前端拿到后 `window.location.href` 过去。`redirect_uri` 缺省走 `FEISHU_REDIRECT_URI` 环境变量,再缺省 `http://localhost:15173/feishu/callback`
+- `POST /api/feishu/callback`,body `{ code }` → 服务端依次:
+  1. `POST /open-apis/auth/v3/app_access_token/internal` 拿 `app_access_token`
+  2. `POST /open-apis/authen/v1/oidc/access_token` 用 code + app_token 换 `user_access_token`
+  3. `GET /open-apis/authen/v1/user_info` 拿 `{ open_id, name, avatar_url, tenant_key }`
+  4. 校验 `tenant_key ∈ allowed_tenant_keys`(配置见 `design/03 §4.2`;允许空 = 暂不限制)
+  5. upsert `user_registry.json`(open_id 为主键,name/avatar_url/last_login 覆盖)
+  6. 签 JWT 写 cookie
+- 端点未配凭证(无 `FEISHU_APP_ID/SECRET`)→ 501 `{ code: "feishu_disabled" }`
+- 上游飞书错误 → 502 `{ code: "feishu_upstream" }`
+- 租户不在白名单 → 403 `{ code: "tenant_forbidden" }`
+
+**JWT 与 Cookie**
+
 - JWT payload:`{ open_id, name, avatar_url, iat, exp }`,**不存角色**
-- 有效期 30 天;剩余 < 7 天自动续期
+- 有效期 30 天;剩余 < 7 天自动续期(在 `auth_middleware` 出口判定)
+
+**凭证环境变量**
+
+- 主名:`FEISHU_APP_ID` / `FEISHU_APP_SECRET`
+- 回退名:`LARK_APP_ID` / `LARK_APP_SECRET`(便于复用 lark-cli 现有应用,详见 `系统/飞书app申请清单.md`)
+- Secret 严禁写入 `config.json` 或代码
+
+**`/api/auth/me` 字段补充**
+
+返回字段含 `feishu_configured: bool`,前端据此决定是否展示"飞书登录"按钮(配置缺失则走 dev 后门)。
 
 ### 6.2 Cookie
 
