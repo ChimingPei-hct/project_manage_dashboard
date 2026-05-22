@@ -60,12 +60,16 @@ function isPast(d) {
 /* 交错 4 行排列,缓解相邻里程碑标签重叠 */
 const ROWS = ['r0', 'r1', 'r2', 'r3']
 function rowOf(idx) { return ROWS[idx % ROWS.length] }
+
+/* 按里程碑数自适应内宽:每个里程碑至少 150px */
+const trackMinWidth = computed(() => Math.max(800, sorted.value.length * 150))
 </script>
 
 <template>
   <div class="timeline">
     <div v-if="!sorted.length" class="empty">暂无里程碑 · 可在管理后台添加</div>
-    <div v-else class="track">
+    <div v-else class="track-scroll">
+     <div class="track" :style="{ minWidth: trackMinWidth + 'px' }">
       <div class="months">
         <div
           v-for="t in monthTicks"
@@ -100,6 +104,7 @@ function rowOf(idx) { return ROWS[idx % ROWS.length] }
           <span class="m-date">{{ m.date.slice(5) }}</span>
         </div>
       </div>
+     </div>
     </div>
   </div>
 </template>
@@ -113,6 +118,11 @@ function rowOf(idx) { return ROWS[idx % ROWS.length] }
   margin: 0 24px 16px;
 }
 .empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; text-align: center; }
+.track-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
 .track {
   position: relative;
   height: 170px;
