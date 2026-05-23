@@ -1,9 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
+import { useView } from '../composables/useView.js'
 import { useEditableModules } from '../composables/useEditableModules.js'
 import { useContactCache, displayName } from '../composables/useContactCache.js'
-import { kpiItemsOf, risksOf, currentWeekRange } from '../composables/useStatusHelpers.js'
+import { kpiItemsOf, risksOf } from '../composables/useStatusHelpers.js'
 import TimelineBar from './TimelineBar.vue'
 import StatusLegend from './StatusLegend.vue'
 import ModuleStatusDots from './ModuleStatusDots.vue'
@@ -55,27 +56,40 @@ function openEdit(card) {
 }
 function closeEdit() { editing.value = null }
 
-const dateRange = computed(() => currentWeekRange())
+const { current, pushView } = useView()
+const sub = computed(() => current.value.sub || 'timeline')
+function switchSub(s) {
+  pushView({ ...current.value, sub: s })
+}
 </script>
 
 <template>
   <div class="pdt-overview">
     <div class="head">
-      <div class="title-block">
-        <h1>{{ pdt?.name || '— 未配置 PDT —' }}</h1>
-        <span class="date-range">{{ dateRange }}</span>
-      </div>
       <StatusLegend />
     </div>
 
-    <TimelineBar :milestones="pdt?.milestones || []" />
+    <nav class="sub-tabs">
+      <button
+        :class="{ primary: sub === 'timeline' }"
+        v-tooltip="'查看里程碑甘特图'"
+        @click="switchSub('timeline')"
+      >甘特图</button>
+      <button
+        :class="{ primary: sub === 'kanban' }"
+        v-tooltip="'查看 PDT 模块卡片看板'"
+        @click="switchSub('kanban')"
+      >全局看板</button>
+    </nav>
 
-    <div v-if="!cards.length" class="empty">
+    <TimelineBar v-if="sub === 'timeline'" :milestones="pdt?.milestones || []" />
+
+    <div v-if="sub === 'kanban' && !cards.length" class="empty">
       暂无 PDT 级总览卡片,请管理员前往
       <a href="?view=admin">管理后台</a> 配置总览卡片或添加 scope=pdt 的模块。
     </div>
 
-    <div v-else class="cards-grid">
+    <div v-else-if="sub === 'kanban'" class="cards-grid">
       <article
         v-for="card in cards"
         :key="card.id"
@@ -147,25 +161,26 @@ const dateRange = computed(() => currentWeekRange())
   gap: 16px;
   flex-wrap: wrap;
 }
-.title-block { display: flex; align-items: baseline; gap: 12px; }
-h1 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-  background: linear-gradient(135deg, #1a1f36 30%, var(--accent) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+.sub-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 24px 12px;
 }
-.date-range {
-  font-size: 14px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-  background: var(--panel-soft);
-  padding: 3px 10px;
+.sub-tabs button {
+  font-size: 13px;
+  padding: 6px 14px;
   border-radius: var(--radius);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.sub-tabs button:hover { border-color: var(--accent-soft); }
+.sub-tabs button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .empty { text-align: center; padding: 64px 24px; color: var(--text-muted); }

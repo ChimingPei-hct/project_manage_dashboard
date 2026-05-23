@@ -11,7 +11,7 @@ import AdminPanel from './components/AdminPanel.vue'
 import WeekSwitcher from './components/WeekSwitcher.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
-const { week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
+const { pdt, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
 const { current, pushView } = useView()
 
 // URL ?week=YYYY-Www ↔ useDashboard.week 双向同步:URL 是单一事实来源
@@ -96,7 +96,7 @@ onMounted(async () => {
   </div>
   <div v-else class="layout">
     <header class="topbar">
-      <div class="brand" v-tooltip="'PMD · 产品线项目看板'"><span class="brand-emoji">📊</span><span class="brand-text">PMD</span></div>
+      <div class="brand" v-tooltip="(pdt?.name ? pdt.name + ' · ' : '') + '产品线项目看板'"><span class="brand-emoji">📊</span><span class="brand-text">{{ pdt?.name || 'PMD' }}</span></div>
       <nav>
         <button
           v-for="n in navItems"

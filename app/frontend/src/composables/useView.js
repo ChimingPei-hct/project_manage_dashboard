@@ -11,6 +11,7 @@ function parseView() {
     view: VIEW_ALIAS[rawView] || rawView,
     id: sp.get('id') || sp.get('ltc') || '',
     week: WEEK_RE.test(wk) ? wk : '',
+    sub: sp.get('sub') || '',
   }
 }
 
@@ -21,6 +22,7 @@ function pushView(next) {
   if (next.view) sp.set('view', next.view)
   if (next.id) sp.set('id', next.id)
   if (next.week && WEEK_RE.test(next.week)) sp.set('week', next.week)
+  if (next.sub) sp.set('sub', next.sub)
   const url = `${window.location.pathname}?${sp.toString()}`
   window.history.pushState({}, '', url)
   current.value = parseView()
