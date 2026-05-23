@@ -3,37 +3,58 @@ import { computed, ref, watch } from 'vue'
 import { api } from '../api/client.js'
 import { useDashboard } from '../composables/useDashboard.js'
 import { kpiItemsOf, risksOf, subRiskOf } from '../composables/useStatusHelpers.js'
+import { adminApi, newId } from '../composables/useAdminApi.js'
+import { useContactCache, displayName } from '../composables/useContactCache.js'
+import UserSearchInput from './UserSearchInput.vue'
+import ConfirmDialog from './harness/ConfirmDialog.vue'
 
 /**
- * 模块状态编辑弹窗(新结构化 schema)。
- * 约束:design/07 §风险说明必填、design/13 §3.3/§4.3/§5.3。
- * 单一入口:PUT /api/status/{module_id}。
+ * 模块编辑弹窗 —— 三块布局:基本信息 / KPI / 风险。
+ * 约束:design/07 §风险说明必填、design/13 §3.3。
+ * 端点:状态走 PUT /api/status/{id};结构走 PUT/POST/DELETE /api/modules/{id}。
  */
 const props = defineProps({
   open: { type: Boolean, default: false },
   module: { type: Object, default: null },
   current: { type: Object, default: () => ({}) },
   focusSubId: { type: String, default: '' },
-  // 复合键 <ltc_id>::<module_id> 用于 ltc_template 模块;留空则用 module.id 兜底
   statusKey: { type: String, default: '' },
+  mode: { type: String, default: 'edit' }, // 'edit' | 'create'
+  canEditStructure: { type: Boolean, default: false },
+  createDefaults: { type: Object, default: () => ({ scope: 'pdt', ltc_id: null, group: '总览' }) },
 })
-const emit = defineEmits(['close', 'saved'])
+const emit = defineEmits(['close', 'saved', 'created', 'deleted', 'updated'])
 
 const COLORS = ['green', 'yellow', 'red', 'gray']
 const COLOR_LABEL = { green: '绿/正常', yellow: '黄/预警', red: '红/Block', gray: '灰/未报' }
 
+const { refresh, modules } = useDashboard()
+const { contacts, ensureContacts } = useContactCache()
+
+/* === 状态 draft === */
 const moduleColor = ref('gray')
 const subColors = ref({})
-const subRisks = ref({}) // {sub_id: text}
-const kpiItems = ref([]) // [{label, value, target}]
-const risks = ref([]) // [{severity, text}]
+const subRisks = ref({})
+const kpiItems = ref([])
+const risks = ref([])
 const saving = ref(false)
 const errorMsg = ref('')
 const toast = ref('')
 
-const { refresh } = useDashboard()
+/* === 结构 draft === */
+const sName = ref('')
+const sGroup = ref('')
+const sOwnerOpenId = ref(null)
+const sOwnerName = ref('')
+const confirmDeleteOpen = ref(false)
 
-function reset() {
+function ownerNameOf(openId) {
+  if (!openId) return ''
+  const u = (contacts.value || []).find(x => x.open_id === openId)
+  return u?.name || displayName(openId) || openId
+}
+
+function resetStatus() {
   const c = props.current || {}
   moduleColor.value = c.module_color || 'gray'
   subColors.value = { ...(c.sub_items_color || {}) }
@@ -48,10 +69,30 @@ function reset() {
   }
 }
 
-watch(() => [props.open, props.module?.id], () => {
-  if (props.open) reset()
+function resetStructure() {
+  const m = props.module
+  if (props.mode === 'create' || !m) {
+    sName.value = ''
+    sGroup.value = props.createDefaults?.group || '总览'
+    sOwnerOpenId.value = null
+    sOwnerName.value = ''
+  } else {
+    sName.value = m.name || ''
+    sGroup.value = m.group || ''
+    sOwnerOpenId.value = m.owner_open_id || null
+    sOwnerName.value = ownerNameOf(m.owner_open_id)
+  }
+}
+
+watch(() => [props.open, props.module?.id, props.mode], () => {
+  if (props.open) {
+    resetStatus()
+    resetStructure()
+    ensureContacts()
+  }
 }, { immediate: true })
 
+/* === 派生校验 === */
 const anyNonGreen = computed(() => {
   if (moduleColor.value !== 'green') return true
   return Object.values(subColors.value).some(v => v && v !== 'green')
@@ -59,28 +100,59 @@ const anyNonGreen = computed(() => {
 const hasRiskText = computed(() => risks.value.some(r => (r.text || '').trim()))
 const riskMissing = computed(() => anyNonGreen.value && !hasRiskText.value)
 
+/* === 编辑操作 === */
 function pickModuleColor(c) { moduleColor.value = c }
 function pickSubColor(sid, c) { subColors.value = { ...subColors.value, [sid]: c } }
-
-function addKpi() { kpiItems.value.push({ label: '', value: '', target: '' }) }
+function addKpi() { kpiItems.value.push({ label: '', value: '', target: '', color: '' }) }
 function removeKpi(i) { kpiItems.value.splice(i, 1) }
-function addRisk(sev = 'red') { risks.value.push({ severity: sev, text: '' }) }
+function addRisk() { risks.value.push({ severity: 'red', text: '' }) }
 function removeRisk(i) { risks.value.splice(i, 1) }
 
-function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
+function pickOwner(u) {
+  sOwnerOpenId.value = u?.open_id || null
+  sOwnerName.value = u?.name || ''
+}
+function clearOwner() {
+  sOwnerOpenId.value = null
+  sOwnerName.value = ''
+}
 
+const structureDirty = computed(() => {
+  if (props.mode === 'create') return true
+  const m = props.module || {}
+  if (sName.value !== (m.name || '')) return true
+  if (sGroup.value !== (m.group || '')) return true
+  if ((sOwnerOpenId.value || null) !== (m.owner_open_id || null)) return true
+  return false
+})
+
+function buildStructureBody() {
+  return {
+    name: sName.value.trim(),
+    group: sGroup.value.trim() || '总览',
+    owner_open_id: sOwnerOpenId.value || null,
+  }
+}
+
+/* === 保存(edit) === */
 async function save() {
   errorMsg.value = ''
   if (riskMissing.value) {
     errorMsg.value = '存在非绿项时必须至少填写一条风险'
-    addRisk('red')
+    addRisk()
     return
   }
   saving.value = true
   try {
+    /* 1) status */
     const cleanKpi = kpiItems.value
-      .map(k => ({ label: (k.label || '').trim(), value: (k.value || '').trim(), target: (k.target || '').trim() }))
-      .filter(k => k.label)
+      .map(k => ({
+        label: (k.label || '').trim(),
+        value: (k.value || '').trim(),
+        target: (k.target || '').trim(),
+        color: COLORS.includes(k.color) && k.color !== 'gray' ? k.color : '',
+      }))
+      .filter(k => k.label || k.value)
     const cleanRisks = risks.value
       .map(r => ({ severity: r.severity || 'red', text: (r.text || '').trim() }))
       .filter(r => r.text)
@@ -98,53 +170,148 @@ async function save() {
       risks: cleanRisks,
       risk_note: cleanRisks[0]?.text || '',
     })
-    await refresh()
+
+    /* 2) structure(仅 PDT Admin 改过才发) */
+    if (props.canEditStructure && structureDirty.value) {
+      const body = buildStructureBody()
+      if (!body.name) { errorMsg.value = '卡名不能为空'; saving.value = false; return }
+      const updated = await adminApi.updateModule(props.module.id, body)
+      const arr = modules.value || []
+      const idx = arr.findIndex(m => m.id === props.module.id)
+      if (idx >= 0) modules.value = [...arr.slice(0, idx), { ...arr[idx], ...updated }, ...arr.slice(idx + 1)]
+      emit('updated', { id: props.module.id, patch: updated })
+    } else {
+      await refresh()
+    }
+
     emit('saved')
     emit('close')
   } catch (e) {
-    if (e.status === 422) {
-      errorMsg.value = typeof e.payload?.detail === 'string' ? e.payload.detail : '校验失败'
-    } else if (e.status === 403) {
-      toast.value = '无权编辑此模块'
-      setTimeout(() => { toast.value = '' }, 3000)
-    } else {
-      errorMsg.value = e.message || '保存失败'
-    }
+    if (e.status === 422) errorMsg.value = typeof e.payload?.detail === 'string' ? e.payload.detail : '校验失败'
+    else if (e.status === 403) { toast.value = '无权编辑此模块'; setTimeout(() => { toast.value = '' }, 3000) }
+    else errorMsg.value = e.message || '保存失败'
   } finally {
     saving.value = false
   }
 }
+
+/* === 创建(create) === */
+async function createCard() {
+  errorMsg.value = ''
+  const body = buildStructureBody()
+  if (!body.name) { errorMsg.value = '卡名不能为空'; return }
+  saving.value = true
+  try {
+    const id = newId()
+    const full = {
+      id,
+      scope: props.createDefaults?.scope || 'pdt',
+      ltc_id: props.createDefaults?.ltc_id || null,
+      sub_items: [],
+      kpi_fields: [],
+      order: (modules.value || []).filter(m => m.scope === (props.createDefaults?.scope || 'pdt')).length + 1,
+      ...body,
+    }
+    const created = await adminApi.createModule(full)
+    modules.value = [...(modules.value || []), created]
+    emit('created', created)
+    emit('close')
+  } catch (e) {
+    errorMsg.value = e.payload?.detail || e.message || '创建失败'
+  } finally {
+    saving.value = false
+  }
+}
+
+async function doDelete() {
+  confirmDeleteOpen.value = false
+  try {
+    await adminApi.deleteModule(props.module.id)
+    modules.value = (modules.value || []).filter(m => m.id !== props.module.id)
+    emit('deleted', props.module.id)
+    emit('close')
+  } catch (e) {
+    errorMsg.value = e.payload?.detail || e.message || '删除失败'
+  }
+}
+
+function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
 </script>
 
 <template>
   <div v-if="open" class="edit-mask" @click="onBackdrop">
-    <div class="edit-box" role="dialog" :aria-label="`编辑 ${module?.name || ''} 状态`">
+    <div class="edit-box" role="dialog" :aria-label="`编辑 ${module?.name || ''}`">
       <header class="dlg-head">
         <div>
-          <h3>{{ module?.name || '模块状态' }}</h3>
-          <p class="sub">{{ module?.group || '' }} · {{ module?.scope === 'pdt' ? 'PDT 级' : 'LTC 级' }}</p>
+          <h3>{{ mode === 'create' ? '新建 PDT 卡片' : (module?.name || '模块编辑') }}</h3>
+          <p class="sub">
+            {{ mode === 'create'
+              ? `scope=${createDefaults?.scope || 'pdt'} · 填好基本信息后即可创建`
+              : `${module?.group || ''} · ${module?.scope === 'pdt' ? 'PDT 级' : 'LTC 级'}` }}
+          </p>
         </div>
         <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃未保存修改'">×</button>
       </header>
 
-      <section class="block">
-        <div class="label">整体灯</div>
-        <div class="color-row">
+      <!-- Block 1:基本信息 -->
+      <section class="block block-basic">
+        <div class="block-title">基本信息</div>
+        <div class="basic-grid">
+          <label class="field">
+            <span class="lbl">卡名</span>
+            <input v-model="sName" :readonly="!canEditStructure" placeholder="如:性能专项" />
+          </label>
+          <label class="field">
+            <span class="lbl">分组</span>
+            <input v-model="sGroup" :readonly="!canEditStructure" placeholder="如:总览" />
+          </label>
+          <div class="field field-owner">
+            <span class="lbl">Owner</span>
+            <UserSearchInput
+              v-if="canEditStructure"
+              :modelValue="sOwnerName"
+              @update:modelValue="v => sOwnerName = v"
+              @select="pickOwner"
+              placeholder="搜索人员姓名…"
+            />
+            <input v-else :value="sOwnerName || '未指派'" readonly class="readonly" />
+            <button
+              v-if="canEditStructure && sOwnerOpenId"
+              class="mini-del owner-clear"
+              v-tooltip="'清除 Owner 绑定'"
+              @click="clearOwner"
+            >×</button>
+          </div>
+        </div>
+
+        <div v-if="mode === 'edit'" class="basic-row light-row">
+          <span class="lbl">整体状态灯</span>
+          <div class="color-row">
+            <button
+              v-for="c in COLORS"
+              :key="c"
+              type="button"
+              class="swatch"
+              :class="{ active: moduleColor === c }"
+              :style="{ background: `var(--status-${c})` }"
+              v-tooltip="`将整体状态置为 ${COLOR_LABEL[c]}`"
+              @click="pickModuleColor(c)"
+            >{{ c === moduleColor ? '✓' : '' }}</button>
+          </div>
+        </div>
+
+        <div v-if="canEditStructure && mode === 'edit'" class="basic-foot">
           <button
-            v-for="c in COLORS"
-            :key="c"
-            type="button"
-            class="swatch"
-            :class="{ active: moduleColor === c }"
-            :style="{ background: `var(--status-${c})` }"
-            v-tooltip="`将整体状态置为 ${COLOR_LABEL[c]}`"
-            @click="pickModuleColor(c)"
-          >{{ c === moduleColor ? '✓' : '' }}</button>
+            class="danger"
+            v-tooltip="'从总览删除此卡(状态同步清除,历史保留)'"
+            @click="confirmDeleteOpen = true"
+          >🗑 删除该卡</button>
         </div>
       </section>
 
-      <section v-if="module?.sub_items?.length" class="block">
-        <div class="label">子项状态 + 风险说明</div>
+      <!-- 子项色块(仅有子项时出现,LTC 常用) -->
+      <section v-if="mode === 'edit' && module?.sub_items?.length" class="block">
+        <div class="block-title">子项状态 + 风险说明</div>
         <div class="sub-list">
           <div
             v-for="s in module.sub_items"
@@ -171,49 +338,60 @@ async function save() {
               v-if="subColors[s.id] === 'red' || subColors[s.id] === 'yellow'"
               v-model="subRisks[s.id]"
               class="sub-note-input"
-              placeholder="该子项的风险/阻塞说明(用于风险详情页)"
+              placeholder="该子项的风险/阻塞说明"
               v-tooltip="'子项级风险说明,会在风险详情页显示在色块右侧'"
             />
           </div>
         </div>
       </section>
 
-      <section class="block">
-        <div class="label">
+      <!-- Block 2:KPI -->
+      <section v-if="mode === 'edit'" class="block">
+        <div class="block-title">
           <span>KPI</span>
-          <button class="mini-add" @click="addKpi" v-tooltip="'新增一行 KPI'">+ 添加</button>
+          <button
+            v-if="canEditStructure"
+            class="mini-add"
+            v-tooltip="'新增一行 KPI(目标说明 / 现状 / 灯)'"
+            @click="addKpi"
+          >+ 行</button>
         </div>
-        <div v-if="!kpiItems.length" class="hint">暂无 KPI,点击「+ 添加」开始填写</div>
+        <div v-if="!kpiItems.length" class="hint">暂无 KPI</div>
         <div v-else class="kpi-table">
           <div class="kpi-row head">
-            <span>指标</span><span>当前值</span><span>目标(可选)</span><span></span>
+            <span>目标说明</span><span>现状</span><span>灯</span><span></span>
           </div>
           <div v-for="(k, i) in kpiItems" :key="i" class="kpi-row">
-            <input v-model="k.label" placeholder="如 Bug 闭环率" v-tooltip="'KPI 名称'" />
-            <input v-model="k.value" placeholder="如 91%" v-tooltip="'KPI 当前值'" />
-            <input v-model="k.target" placeholder="如 95%" v-tooltip="'KPI 目标值(可选)'" />
-            <button class="mini-del" v-tooltip="'删除该 KPI'" @click="removeKpi(i)">✕</button>
+            <input v-model="k.label" placeholder="如:CPU 占用率 ≤70%" v-tooltip="'本行 KPI 要达到什么目的'" />
+            <input v-model="k.value" placeholder="如:78" v-tooltip="'本周/当前的现状数值'" />
+            <select v-model="k.color" v-tooltip="'本行 KPI 的当前红绿灯'">
+              <option value="">—</option>
+              <option value="green">🟢 绿/达成</option>
+              <option value="yellow">🟡 黄/略差</option>
+              <option value="red">🔴 红/未达</option>
+            </select>
+            <button
+              v-if="canEditStructure"
+              class="mini-del"
+              v-tooltip="'删除该行 KPI'"
+              @click="removeKpi(i)"
+            >✕</button>
+            <span v-else></span>
           </div>
         </div>
       </section>
 
-      <section class="block">
-        <div class="label">
+      <!-- Block 3:风险 -->
+      <section v-if="mode === 'edit'" class="block">
+        <div class="block-title">
           <span>风险 / 重点问题<span v-if="anyNonGreen" class="req">(非绿必填至少一条)</span></span>
-          <span class="risk-add-group">
-            <button class="mini-add sev-red" @click="addRisk('red')" v-tooltip="'新增红色风险(Delay/Block)'">+ 红</button>
-            <button class="mini-add sev-yellow" @click="addRisk('yellow')" v-tooltip="'新增黄色风险(预警)'">+ 黄</button>
-          </span>
+          <button class="mini-add" v-tooltip="'新增一条风险'" @click="addRisk">+ 风险</button>
         </div>
         <div v-if="!risks.length" class="hint" :class="{ err: riskMissing }">
-          {{ riskMissing ? '风险说明不能为空(非绿项必填至少一条)' : '暂无风险,点击「+ 红/+ 黄」添加' }}
+          {{ riskMissing ? '风险说明不能为空(非绿项必填至少一条)' : '暂无风险,点击「+ 风险」添加' }}
         </div>
         <div v-else class="risk-list">
-          <div v-for="(r, i) in risks" :key="i" class="risk-row" :class="`sev-${r.severity}`">
-            <select v-model="r.severity" v-tooltip="'风险级别'">
-              <option value="red">红 · Delay/Block</option>
-              <option value="yellow">黄 · 预警</option>
-            </select>
+          <div v-for="(r, i) in risks" :key="i" class="risk-row">
             <textarea
               v-model="r.text"
               rows="2"
@@ -230,14 +408,31 @@ async function save() {
       <footer class="dlg-foot">
         <button @click="emit('close')" v-tooltip="'放弃未保存的修改'">取消</button>
         <button
+          v-if="mode === 'create'"
+          class="primary"
+          :disabled="saving || !sName.trim()"
+          v-tooltip="'创建新卡片;创建后可继续填报状态'"
+          @click="createCard"
+        >{{ saving ? '创建中…' : '创建' }}</button>
+        <button
+          v-else
           class="primary"
           :disabled="saving || riskMissing"
-          v-tooltip="riskMissing ? '风险说明不能为空' : '提交并刷新看板'"
+          v-tooltip="riskMissing ? '风险说明不能为空' : '一键保存状态与结构改动'"
           @click="save"
         >{{ saving ? '保存中…' : '保存' }}</button>
       </footer>
 
       <div v-if="toast" class="toast">{{ toast }}</div>
+
+      <ConfirmDialog
+        :open="confirmDeleteOpen"
+        title="删除卡片"
+        :body="`确认删除卡片「${module?.name || ''}」?\n本卡状态会被清除,历史流保留。`"
+        confirm-text="删除"
+        @confirm="doDelete"
+        @cancel="confirmDeleteOpen = false"
+      />
     </div>
   </div>
 </template>
@@ -250,7 +445,7 @@ async function save() {
 }
 .edit-box {
   background: var(--panel); border-radius: var(--radius);
-  padding: 18px 22px; min-width: 520px; max-width: 640px; width: 90vw;
+  padding: 18px 22px; min-width: 540px; max-width: 680px; width: 92vw;
   max-height: 88vh; overflow-y: auto;
   box-shadow: var(--shadow-lg);
   position: relative;
@@ -261,12 +456,38 @@ h3 { margin: 0; font-size: 16px; font-weight: 700; }
 .close { border: none; background: transparent; font-size: 22px; line-height: 1; padding: 0 6px; cursor: pointer; }
 .close:hover { color: var(--accent); background: transparent; }
 
-.block { margin-bottom: 16px; }
-.label {
+.block { margin-bottom: 14px; }
+.block-title {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 13px; color: var(--text-muted); margin-bottom: 6px; font-weight: 600;
+  font-size: 13px; color: var(--text); font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
 }
-.req { color: var(--status-red); margin-left: 6px; font-weight: 500; }
+.req { color: var(--status-red); margin-left: 6px; font-size: 11px; font-weight: 500; }
+
+.block-basic {
+  background: var(--panel-soft);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.block-basic .block-title { border-bottom: 1px solid var(--border); }
+.basic-grid { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr; gap: 8px; }
+.field { display: flex; flex-direction: column; gap: 3px; position: relative; }
+.field .lbl { font-size: 11px; color: var(--text-muted); }
+.field input { width: 100%; font-size: 13px; padding: 5px 8px; }
+.field input.readonly { background: var(--panel); color: var(--text-muted); }
+.field-owner { position: relative; }
+.owner-clear { position: absolute; right: 4px; top: 22px; font-size: 11px; padding: 1px 5px; }
+
+.basic-row.light-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 10px;
+}
+.basic-row .lbl { font-size: 11px; color: var(--text-muted); }
+.basic-foot { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); }
 
 .color-row { display: flex; gap: 4px; }
 .swatch {
@@ -289,22 +510,16 @@ h3 { margin: 0; font-size: 16px; font-weight: 700; }
   border: 1px solid var(--border); background: var(--panel); cursor: pointer;
 }
 .mini-add { color: var(--accent); border-color: var(--accent); }
-.mini-add.sev-red { color: var(--status-red); border-color: var(--status-red); }
-.mini-add.sev-yellow { color: var(--status-yellow); border-color: var(--status-yellow); }
-.risk-add-group { display: inline-flex; gap: 4px; }
 .mini-del { color: var(--text-muted); }
 .mini-del:hover { color: var(--status-red); border-color: var(--status-red); }
 
 .kpi-table { display: flex; flex-direction: column; gap: 4px; }
-.kpi-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr 28px; gap: 6px; align-items: center; }
+.kpi-row { display: grid; grid-template-columns: 1.6fr 1fr 110px 28px; gap: 6px; align-items: center; }
 .kpi-row.head { font-size: 11px; color: var(--text-dim); padding: 0 4px; }
-.kpi-row input { font-size: 12.5px; padding: 4px 8px; }
+.kpi-row input, .kpi-row select { font-size: 12.5px; padding: 4px 8px; }
 
 .risk-list { display: flex; flex-direction: column; gap: 6px; }
-.risk-row { display: grid; grid-template-columns: 130px 1fr 28px; gap: 6px; align-items: stretch; padding: 6px; border-radius: var(--radius); }
-.risk-row.sev-red { background: var(--status-red-bg); }
-.risk-row.sev-yellow { background: var(--status-yellow-bg); }
-.risk-row select { font-size: 12px; }
+.risk-row { display: grid; grid-template-columns: 1fr 28px; gap: 6px; align-items: stretch; padding: 6px; border-radius: var(--radius); background: var(--status-red-bg); }
 .risk-row textarea { font-size: 12.5px; padding: 6px 8px; resize: vertical; min-height: 36px; }
 
 .hint { font-size: 12px; color: var(--text-dim); padding: 6px 0; }
@@ -317,6 +532,8 @@ h3 { margin: 0; font-size: 16px; font-weight: 700; }
 }
 
 .dlg-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.danger { background: var(--status-red); color: #fff; border-color: var(--status-red); }
+.danger:hover { opacity: 0.9; }
 .toast {
   position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
   background: rgba(15,23,42,0.95); color: #fff;

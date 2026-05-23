@@ -94,6 +94,16 @@
 - 值为字符串,长度 0–200
 - 后端不解析,只透传
 
+### 5.4b `kpi_items`(新结构化数组,优先于 `kpi_values`)
+
+- 数组,元素为对象,字段:
+  - `label`(string,必填,即"目标说明",示例 `"CPU 占用率 ≤70%"`)
+  - `value`(string,可空,即"现状",示例 `"78"`)
+  - `target`(string,可空,旧字段,新 UI 不暴露,保留兼容)
+  - `color`(string,可空,枚举 `"green"`/`"yellow"`/`"red"` 或 `""` 空字符串;**行级红绿灯**,由 Owner/PDT Admin 在编辑弹窗下拉选择;为空表示未标灯)
+- 后端 `_normalize_kpi_items()` 仅保留上述四字段,其它字段静默丢弃
+- 前端 `useStatusHelpers.kpiItemsOf()` 返回项保证有 `color` 字段(老数据回填 `""`)
+
 ### 5.5 `risk_note`
 
 - 字符串,长度 0–500

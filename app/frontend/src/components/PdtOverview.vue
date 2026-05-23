@@ -2,17 +2,26 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
 import { useView } from '../composables/useView.js'
+import { useAuth } from '../composables/useAuth.js'
 import { useEditableModules } from '../composables/useEditableModules.js'
 import { useContactCache, displayName } from '../composables/useContactCache.js'
 import { kpiItemsOf, risksOf } from '../composables/useStatusHelpers.js'
 import TimelineBar from './TimelineBar.vue'
+import MilestoneEditor from './admin/MilestoneEditor.vue'
 import StatusLegend from './StatusLegend.vue'
 import ModuleStatusDots from './ModuleStatusDots.vue'
 import StatusEditDialog from './StatusEditDialog.vue'
 import OwnerChip from './OwnerChip.vue'
+import Modal from './harness/Modal.vue'
+import PdtBaseDrawer from './admin/PdtBaseDrawer.vue'
+import AdminUsers from './admin/AdminUsers.vue'
+import SnapshotPanel from './admin/SnapshotPanel.vue'
 
-const { pdt, status, modulesByScope } = useDashboard()
+const { pdt, status, modulesByScope, isReadonly } = useDashboard()
+const { me } = useAuth()
 const { canEdit } = useEditableModules()
+
+const canEnterPdtAdmin = computed(() => !!(me.value && (me.value.is_super || me.value.is_pdt_admin)))
 const { ensureContacts } = useContactCache()
 onMounted(() => { ensureContacts() })
 
@@ -51,10 +60,22 @@ function kpisOf(card) { return kpiItemsOf(statusOf(card), card.kpi_fields) }
 function risksFor(card) { return card.show_risk ? risksOf(statusOf(card)) : [] }
 
 const editing = ref(null)
+const dialogMode = ref('edit')
 function openEdit(card) {
-  if (canEdit(card.module.id)) editing.value = card.module
+  if (canEdit(card.module.id)) {
+    dialogMode.value = 'edit'
+    editing.value = card.module
+  }
 }
-function closeEdit() { editing.value = null }
+function openCreate() {
+  dialogMode.value = 'create'
+  editing.value = { id: '__new__', name: '', group: '总览', scope: 'pdt', kpi_fields: [], sub_items: [] }
+}
+function closeEdit() { editing.value = null; dialogMode.value = 'edit' }
+
+const showAdminTool = ref('') // '' | 'pdt-base' | 'people' | 'snapshots'
+function openAdminTool(name) { showAdminTool.value = name }
+function closeAdminTool() { showAdminTool.value = '' }
 
 const { current, pushView } = useView()
 const sub = computed(() => current.value.sub || 'timeline')
@@ -67,6 +88,23 @@ function switchSub(s) {
   <div class="pdt-overview">
     <div class="head">
       <StatusLegend />
+      <div v-if="canEnterPdtAdmin && !isReadonly" class="admin-tools">
+        <button
+          class="tool-btn"
+          v-tooltip="'编辑 PDT 名称、SOP 等基础信息'"
+          @click="openAdminTool('pdt-base')"
+        >⚙ PDT 基础</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'管理 PDT/LTC Admin 与 Owner 绑定'"
+          @click="openAdminTool('people')"
+        >👥 人员</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'查看历史周快照与定时冻结'"
+          @click="openAdminTool('snapshots')"
+        >📸 快照</button>
+      </div>
     </div>
 
     <nav class="sub-tabs">
@@ -82,11 +120,19 @@ function switchSub(s) {
       >全局看板</button>
     </nav>
 
-    <TimelineBar v-if="sub === 'timeline'" :milestones="pdt?.milestones || []" />
+    <template v-if="sub === 'timeline'">
+      <TimelineBar :milestones="pdt?.milestones || []" />
+      <section v-if="canEnterPdtAdmin && !isReadonly" class="milestone-inline">
+        <header class="mi-head">
+          <h3>编辑里程碑</h3>
+          <span class="mi-hint">所见即所得 · 改动保存后甘特图即时刷新</span>
+        </header>
+        <MilestoneEditor :show-preview="false" />
+      </section>
+    </template>
 
-    <div v-if="sub === 'kanban' && !cards.length" class="empty">
-      暂无 PDT 级总览卡片,请管理员前往
-      <a href="?view=admin">管理后台</a> 配置总览卡片或添加 scope=pdt 的模块。
+    <div v-if="sub === 'kanban' && !cards.length && !(canEnterPdtAdmin && !isReadonly)" class="empty">
+      暂无 PDT 级总览卡片,请管理员添加。
     </div>
 
     <div v-else-if="sub === 'kanban'" class="cards-grid">
@@ -107,33 +153,39 @@ function switchSub(s) {
         </header>
 
         <div class="kpis-block">
-          <div class="section-title">KPI</div>
-          <ul v-if="kpisOf(card).length" class="kpis">
-            <li v-for="(kpi, i) in kpisOf(card)" :key="i">
-              <span class="dot-bullet"></span>
-              <span class="k">{{ kpi.label }}</span>
-              <span class="sep">:</span>
-              <span class="v">{{ kpi.value || '—' }}</span>
-              <span v-if="kpi.target" class="target">/ {{ kpi.target }}</span>
-            </li>
-          </ul>
-          <div v-else class="section-empty">暂无</div>
+          <div class="section-label">
+            <span class="sl-en">KPI</span>
+            <span class="sl-cn">关键指标</span>
+          </div>
+          <table v-if="kpisOf(card).length" class="kpis">
+            <tbody>
+              <tr v-for="(kpi, i) in kpisOf(card)" :key="i">
+                <td class="k-name">{{ kpi.label }}</td>
+                <td class="k-value">{{ kpi.value || '—' }}</td>
+                <td class="k-target">{{ kpi.target || '' }}</td>
+                <td class="k-light">
+                  <span v-if="kpi.color" class="kpi-dot" :class="`tone-${kpi.color}`" :title="kpi.color"></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="section-empty">— 暂无 —</div>
         </div>
 
         <div class="risks-block">
-          <div class="section-title">重点问题</div>
-          <div v-if="risksFor(card).length" class="risks">
-            <div
+          <div class="section-label">
+            <span class="sl-en">ISSUES · {{ risksFor(card).length }}</span>
+            <span class="sl-cn">重点问题</span>
+          </div>
+          <ul v-if="risksFor(card).length" class="risks">
+            <li
               v-for="(r, i) in risksFor(card)"
               :key="i"
               class="risk-line"
               :class="`sev-${r.severity}`"
-            >
-              <span class="risk-icon">⚠</span>
-              <span class="risk-text">{{ r.text }}</span>
-            </div>
-          </div>
-          <div v-else class="section-empty">暂无</div>
+            >{{ r.text }}</li>
+          </ul>
+          <div v-else class="section-empty">— 暂无 —</div>
         </div>
 
         <footer class="card-foot">
@@ -146,14 +198,36 @@ function switchSub(s) {
           >编辑</button>
         </footer>
       </article>
+
+      <article
+        v-if="canEnterPdtAdmin && !isReadonly"
+        class="card add-card"
+        v-tooltip="'新建一张 PDT 级总览卡片(scope=pdt)'"
+        @click="openCreate"
+      >
+        <span class="plus">+</span>
+        <span class="add-lbl">新增卡片</span>
+      </article>
     </div>
 
     <StatusEditDialog
       :open="!!editing"
       :module="editing"
-      :current="editing ? status?.[editing.id] : {}"
+      :current="editing && dialogMode === 'edit' ? status?.[editing.id] : {}"
+      :mode="dialogMode"
+      :can-edit-structure="canEnterPdtAdmin && !isReadonly"
       @close="closeEdit"
     />
+
+    <Modal :open="showAdminTool === 'pdt-base'" title="PDT 基础信息" width="640px" @close="closeAdminTool">
+      <PdtBaseDrawer />
+    </Modal>
+    <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
+      <AdminUsers />
+    </Modal>
+    <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
+      <SnapshotPanel />
+    </Modal>
   </div>
 </template>
 
@@ -167,10 +241,27 @@ function switchSub(s) {
   gap: 16px;
   flex-wrap: wrap;
 }
+.admin-tools { display: flex; gap: 6px; }
+.admin-tools .tool-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel-soft);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms, background 120ms, border-color 120ms;
+}
+.admin-tools .tool-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--panel);
+}
 .sub-tabs {
   display: flex;
   gap: 8px;
   padding: 0 24px 12px;
+  align-items: center;
 }
 .sub-tabs button {
   font-size: 13px;
@@ -191,6 +282,23 @@ function switchSub(s) {
 
 .empty { text-align: center; padding: 64px 24px; color: var(--text-muted); }
 
+.milestone-inline {
+  margin: 8px 24px 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+}
+.milestone-inline .mi-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.milestone-inline .mi-head h3 { margin: 0; font-size: 14px; font-weight: 700; }
+.milestone-inline .mi-hint { font-size: 11px; color: var(--text-dim); }
+
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -198,18 +306,20 @@ function switchSub(s) {
   padding: 0 24px;
 }
 
+/* ===== 样板 B · Report 体 ===== */
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  padding: 14px 16px 12px;
+  padding: 16px 18px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
   position: relative;
   overflow: hidden;
+  font-feature-settings: 'tnum' on;
 }
 .card::before {
   content: '';
@@ -219,70 +329,143 @@ function switchSub(s) {
   background: var(--status-gray);
   border-radius: var(--radius) 0 0 var(--radius);
 }
-.card.tone-green::before { background: var(--status-green); }
+.card.tone-green::before  { background: var(--status-green); }
 .card.tone-yellow::before { background: var(--status-yellow); }
-.card.tone-red::before { background: var(--status-red); }
+.card.tone-red::before    { background: var(--status-red); }
 .card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
   border-color: var(--accent-soft);
 }
 
-.card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.card-name { font-weight: 700; font-size: 15px; color: var(--text); }
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--text);
+}
+.card-name {
+  font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: 1px;
+  color: var(--text);
+}
 
 .kpis-block, .risks-block {
-  border-top: 1px dashed var(--border-subtle);
-  padding: 6px 0 4px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
-.section-title { font-size: 11px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.4px; }
-.section-empty { font-size: 12px; color: var(--text-dim); padding: 2px 0 4px; }
+
+.section-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 2px;
+}
+.sl-en {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.sl-cn {
+  font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
+  letter-spacing: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.section-empty {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 2px 0;
+}
+
 .kpis {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.kpis td {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--border-subtle);
+  vertical-align: baseline;
+}
+.kpis tr:last-child td { border-bottom: 0; }
+.k-name  { color: var(--text-muted); }
+.k-value {
+  text-align: right;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  width: 72px;
+}
+.k-target {
+  text-align: right;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  width: 56px;
+}
+.k-light { width: 14px; text-align: right; padding-left: 6px; }
+.kpi-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  background: var(--status-gray);
+  vertical-align: middle;
+}
+.kpi-dot.tone-green  { background: var(--status-green); }
+.kpi-dot.tone-yellow { background: var(--status-yellow); }
+.kpi-dot.tone-red    { background: var(--status-red); }
+
+.risks {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 12.5px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
-.kpis li { display: flex; align-items: baseline; gap: 4px; line-height: 1.5; }
-.dot-bullet {
-  width: 4px; height: 4px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  display: inline-block;
-  flex-shrink: 0;
-  margin-right: 4px;
-  margin-top: 7px;
-  align-self: flex-start;
-}
-.k { color: var(--text-muted); flex-shrink: 0; }
-.sep { color: var(--text-dim); margin: 0 2px; }
-.v { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-.target { color: var(--text-dim); font-size: 11px; margin-left: 4px; font-variant-numeric: tabular-nums; }
-.risks { display: flex; flex-direction: column; gap: 2px; }
 .risk-line {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
   font-size: 12.5px;
-  line-height: 1.5;
+  line-height: 1.65;
   color: var(--text);
+  padding: 5px 0 5px 16px;
+  border-bottom: 1px dotted var(--border-subtle);
+  position: relative;
 }
-.risk-icon { flex-shrink: 0; font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-.risk-text { flex: 1; }
+.risks li:last-child { border-bottom: 0; }
+.risk-line::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 13px;
+  width: 5px;
+  height: 5px;
+  background: var(--text-muted);
+  border-radius: 50%;
+}
+.risk-line.sev-yellow::before { background: var(--status-yellow); }
+.risk-line.sev-red::before    { background: var(--status-red); }
 
 .card-foot {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
+  padding-top: 10px;
+  border-top: 1px solid var(--text);
 }
 .owner {
   background: var(--accent-soft);
@@ -295,5 +478,38 @@ function switchSub(s) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.edit-btn { font-size: 11px; padding: 2px 10px; }
+.edit-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  letter-spacing: 2px;
+  border-radius: var(--radius);
+}
+
+.add-card {
+  border: 1px dashed var(--border);
+  background: var(--panel-soft);
+  box-shadow: none;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: color 120ms, border-color 120ms, background 120ms;
+}
+.add-card::before { display: none; }
+.add-card:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--panel);
+  transform: none;
+}
+.add-card .plus {
+  font-size: 36px;
+  line-height: 1;
+  font-weight: 300;
+}
+.add-card .add-lbl {
+  font-size: 13px;
+  letter-spacing: 4px;
+}
 </style>

@@ -730,10 +730,14 @@ def _normalize_kpi_items(raw) -> list[dict]:
         label = (item.get("label") or "").strip()
         if not label:
             continue
+        color = item.get("color")
+        if color not in VALID_COLORS:
+            color = ""
         out.append({
             "label": label,
             "value": str(item.get("value") or "").strip(),
             "target": str(item.get("target") or "").strip(),
+            "color": color,
         })
     return out
 

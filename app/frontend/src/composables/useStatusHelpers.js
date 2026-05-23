@@ -10,16 +10,18 @@ export function kpiItemsOf(statusEntry, kpiFields) {
       label: k.label || '',
       value: k.value || '',
       target: k.target || '',
+      color: k.color || '',
     }))
   }
   const vals = statusEntry.kpi_values || {}
   if (!kpiFields?.length) {
-    return Object.entries(vals).map(([k, v]) => ({ label: k, value: String(v ?? ''), target: '' }))
+    return Object.entries(vals).map(([k, v]) => ({ label: k, value: String(v ?? ''), target: '', color: '' }))
   }
   return kpiFields.map(f => ({
     label: f.label || f.key,
     value: String(vals[f.key] ?? ''),
     target: f.target || '',
+    color: '',
   })).filter(k => k.value || k.target)
 }
 

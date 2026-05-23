@@ -46,6 +46,9 @@ const canEnter = computed(() => me.value && (me.value.is_super || me.value.is_pd
     <p>请联系超级管理员授予权限。</p>
   </div>
   <div v-else class="admin-shell">
+    <div class="migration-banner" v-tooltip="'回到 PDT 总览页:卡片「编辑」 / 末尾「+ 新增」 / 顶部 PDT 基础·人员·快照'">
+      PDT 卡片配置已下沉到总览页(卡片『编辑』 / 末尾『+ 新增』 / 顶部 PDT 基础·人员·快照)。本页保留 LTC,后续 LTC 独立后整体下线。
+    </div>
     <aside class="tree-pane">
       <header class="tree-head">
         <span class="title">配置导航</span>
@@ -111,6 +114,15 @@ const canEnter = computed(() => me.value && (me.value.is_super || me.value.is_pd
   gap: 16px;
   padding: 16px 24px 24px;
   min-height: calc(100vh - 80px);
+}
+.migration-banner {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--panel-soft);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
 }
 
 .tree-pane {
