@@ -106,28 +106,34 @@ function switchSub(s) {
           />
         </header>
 
-        <ul v-if="kpisOf(card).length" class="kpis">
-          <li v-for="(kpi, i) in kpisOf(card)" :key="i">
-            <span class="dot-bullet"></span>
-            <span class="k">{{ kpi.label }}</span>
-            <span class="sep">:</span>
-            <span class="v">{{ kpi.value || '—' }}</span>
-            <span v-if="kpi.target" class="target">/ {{ kpi.target }}</span>
-          </li>
-        </ul>
-        <div v-else class="kpis-empty">暂无 KPI</div>
+        <div class="kpis-block">
+          <div class="section-title">KPI</div>
+          <ul v-if="kpisOf(card).length" class="kpis">
+            <li v-for="(kpi, i) in kpisOf(card)" :key="i">
+              <span class="dot-bullet"></span>
+              <span class="k">{{ kpi.label }}</span>
+              <span class="sep">:</span>
+              <span class="v">{{ kpi.value || '—' }}</span>
+              <span v-if="kpi.target" class="target">/ {{ kpi.target }}</span>
+            </li>
+          </ul>
+          <div v-else class="section-empty">暂无</div>
+        </div>
 
-        <div v-if="risksFor(card).length" class="risks">
-          <div class="risks-title">重点问题</div>
-          <div
-            v-for="(r, i) in risksFor(card)"
-            :key="i"
-            class="risk-line"
-            :class="`sev-${r.severity}`"
-          >
-            <span class="risk-icon">⚠</span>
-            <span class="risk-text">{{ r.text }}</span>
+        <div class="risks-block">
+          <div class="section-title">重点问题</div>
+          <div v-if="risksFor(card).length" class="risks">
+            <div
+              v-for="(r, i) in risksFor(card)"
+              :key="i"
+              class="risk-line"
+              :class="`sev-${r.severity}`"
+            >
+              <span class="risk-icon">⚠</span>
+              <span class="risk-text">{{ r.text }}</span>
+            </div>
           </div>
+          <div v-else class="section-empty">暂无</div>
         </div>
 
         <footer class="card-foot">
@@ -225,13 +231,20 @@ function switchSub(s) {
 .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .card-name { font-weight: 700; font-size: 15px; color: var(--text); }
 
+.kpis-block, .risks-block {
+  border-top: 1px dashed var(--border-subtle);
+  padding: 6px 0 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.section-title { font-size: 11px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.4px; }
+.section-empty { font-size: 12px; color: var(--text-dim); padding: 2px 0 4px; }
 .kpis {
   list-style: none;
   margin: 0;
-  padding: 8px 0;
+  padding: 0;
   font-size: 12.5px;
-  border-top: 1px dashed var(--border-subtle);
-  border-bottom: 1px dashed var(--border-subtle);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -251,22 +264,16 @@ function switchSub(s) {
 .sep { color: var(--text-dim); margin: 0 2px; }
 .v { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 .target { color: var(--text-dim); font-size: 11px; margin-left: 4px; font-variant-numeric: tabular-nums; }
-.kpis-empty { font-size: 12px; color: var(--text-dim); padding: 6px 0; border-top: 1px dashed var(--border-subtle); border-bottom: 1px dashed var(--border-subtle); text-align: center; }
-
-.risks { display: flex; flex-direction: column; gap: 4px; }
-.risks-title { font-size: 11px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.4px; }
+.risks { display: flex; flex-direction: column; gap: 2px; }
 .risk-line {
   display: flex;
   gap: 6px;
   align-items: flex-start;
-  font-size: 12px;
-  padding: 6px 8px;
-  border-radius: var(--radius);
+  font-size: 12.5px;
   line-height: 1.5;
+  color: var(--text);
 }
-.risk-line.sev-red { background: var(--status-red-bg); color: var(--status-red); }
-.risk-line.sev-yellow { background: var(--status-yellow-bg); color: var(--status-yellow); }
-.risk-icon { flex-shrink: 0; font-size: 12px; }
+.risk-icon { flex-shrink: 0; font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 .risk-text { flex: 1; }
 
 .card-foot {

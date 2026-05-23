@@ -2,42 +2,84 @@
   "pdt-perf": {
     "module_color": "yellow",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:30:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "deepperf": "green",
       "delay-stat": "green",
       "kev-stat": "yellow"
     },
-    "risk_note": "kev 对感知/规控进程稳定性有影响,待优化;C++ topic 录制工具仍在验证"
+    "risk_note": "kev 对感知/规控进程稳定性有影响,待优化;C++ topic 录制工具仍在验证",
+    "kpi_values": {
+      "cpu_util": "78",
+      "fps_perception": "27.5",
+      "delay_e2e": "138"
+    },
+    "risks": [
+      {
+        "severity": "yellow",
+        "text": "kev 对感知/规控进程稳定性有影响,待优化"
+      },
+      {
+        "severity": "yellow",
+        "text": "C++ topic 录制工具仍在验证"
+      },
+      {
+        "severity": "red",
+        "text": "DeepPerf 与新版调度器兼容性问题阻塞中"
+      }
+    ]
   },
   "pdt-devenv": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "ota-build": "green",
       "hil-test": "green",
       "code-gate": "yellow"
+    },
+    "kpi_values": {
+      "build_pass": "99.2",
+      "ci_duration": "21"
     }
   },
   "pdt-ut": {
     "module_color": "red",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:30:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "auto-ut": "yellow",
       "auto-ut-batch": "green",
       "vcast24": "red"
     },
-    "risk_note": "g++ 版本冲突:vcast24 用 g++11,auto_ut 5.0 用 g++13"
+    "risk_note": "g++ 版本冲突:vcast24 用 g++11,auto_ut 5.0 用 g++13",
+    "kpi_values": {
+      "coverage": "54",
+      "ut_pass": "92.8",
+      "failing": "37"
+    },
+    "risks": [
+      {
+        "severity": "red",
+        "text": "g++ 版本冲突:vcast24 用 g++11,auto_test 仍依赖 g++9"
+      },
+      {
+        "severity": "red",
+        "text": "覆盖率低于 70% 目标,缺失场景集中在异常分支"
+      },
+      {
+        "severity": "yellow",
+        "text": "失败用例 37 条,16 条与并发相关需排查"
+      }
+    ]
   },
   "pdt-qnx-migration": {
     "module_color": "red",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:30:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "ros2-adaptation": "green",
@@ -45,58 +87,124 @@
       "gateway": "red",
       "dvr": "yellow"
     },
-    "risk_note": "Gateway 标红:zs32 worldsim 方案 x86→j6b 透传数据问题处理中"
+    "risk_note": "Gateway 标红:zs32 worldsim 方案 x86→j6b 透传数据问题处理中",
+    "kpi_values": {
+      "migrated_pkgs": "28",
+      "blockers": "3"
+    },
+    "risks": [
+      {
+        "severity": "red",
+        "text": "Gateway 标红:zs32 worldsim 方案 x86 → qnx 编译失败"
+      },
+      {
+        "severity": "yellow",
+        "text": "已迁移 28/42 组件,剩余阻塞集中在感知 IPC"
+      },
+      {
+        "severity": "red",
+        "text": "tools 链供应商交付延后 2 周"
+      }
+    ]
   },
   "pdt-model-inference": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "updated_at": "2026-05-23T20:00:00+08:00",
+    "metadata": {},
+    "kpi_values": {
+      "infer_latency": "32",
+      "throughput": "135"
+    }
   },
   "pdt-perception": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "param2-switch": "yellow"
+    },
+    "kpi_values": {
+      "obj_recall": "96.4",
+      "lane_acc": "97.1"
     }
   },
   "pdt-mainline-parking": {
     "module_color": "red",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:30:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "mainline-integration": "yellow",
       "parking-perception": "yellow",
       "hmi-hde": "red"
     },
-    "risk_note": "HMI/HDE 标红;id4 泊车手台搜车位等待 hde 联调"
+    "risk_note": "HMI/HDE 标红;id4 泊车手台搜车位等待 hde 联调",
+    "kpi_values": {
+      "integration_pass": "73",
+      "open_bugs": "26"
+    },
+    "risks": [
+      {
+        "severity": "red",
+        "text": "HMI/HDE 标红;id4 泊车手台搜车位等待 hde 联调"
+      },
+      {
+        "severity": "red",
+        "text": "联调通过率 73%,未关闭 bug 26 条"
+      },
+      {
+        "severity": "yellow",
+        "text": "主线/泊车回归用例库待补 12 个场景"
+      }
+    ]
   },
   "pdt-data-feedback": {
     "module_color": "yellow",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:30:00+08:00",
     "metadata": {},
-    "risk_note": "客户车 T75 改制涉及新硬件分流器适配,方案待验证"
+    "risk_note": "客户车 T75 改制涉及新硬件分流器适配,方案待验证",
+    "kpi_values": {
+      "daily_upload_gb": "612",
+      "loss_rate": "1.8"
+    },
+    "risks": [
+      {
+        "severity": "yellow",
+        "text": "客户车 T75 改制涉及新硬件分流器适配,方案待验证"
+      },
+      {
+        "severity": "yellow",
+        "text": "日回传量 612GB,低于目标 800GB"
+      }
+    ]
   },
   "pdt-auto-efficiency": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "updated_at": "2026-05-23T20:00:00+08:00",
+    "metadata": {},
+    "kpi_values": {
+      "auto_rate": "82",
+      "manual_saved": "46"
+    }
   },
   "pdt-data-collection": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "updated_at": "2026-05-23T20:00:00+08:00",
+    "metadata": {},
+    "kpi_values": {
+      "mileage": "3260",
+      "scene_cov": "88"
+    }
   },
   "pdt-calibration": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "param1-to-param2-mcap": "green",
@@ -105,23 +213,36 @@
       "geely-test": "green",
       "kx21-mmc-zs32-design": "yellow",
       "zs32-ecu-cal": "yellow"
+    },
+    "kpi_values": {
+      "calib_pass": "99.1",
+      "vehicles": "47"
     }
   },
   "pdt-replay": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {},
     "sub_items_color": {
       "drive-replay": "green",
       "param2-cloud-replay": "yellow"
+    },
+    "kpi_values": {
+      "scene_total": "5240",
+      "weekly_runs": "238"
     }
   },
   "pdt-resources": {
     "module_color": "green",
     "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "updated_at": "2026-05-23T20:00:00+08:00",
+    "metadata": {},
+    "kpi_values": {
+      "hr_fill": "72.6",
+      "budget_use": "27",
+      "chip_ship": "5.14"
+    }
   },
   "ltc-mainline-id4-base-service": {
     "module_color": "green",

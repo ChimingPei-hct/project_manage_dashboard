@@ -10,8 +10,8 @@ const props = defineProps({
 
 const emit = defineEmits(['edit'])
 
-/* 三圆点:位置 0=red, 1=yellow, 2=green。当前色对应那格"亮",其他为浅灰背景 */
-const tones = ['red', 'yellow', 'green']
+/* 三圆点:位置 0=green, 1=yellow, 2=red。当前色对应那格"亮",其他为浅灰背景 */
+const tones = ['green', 'yellow', 'red']
 const tip = computed(() => {
   if (props.color === 'gray') return '未填报'
   const map = { red: 'Delay/Block', yellow: '进展预警', green: '进展正常' }

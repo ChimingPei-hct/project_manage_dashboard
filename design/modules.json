@@ -7,7 +7,26 @@
     "name": "性能专项",
     "order": 1,
     "owner_open_id": "ou_b0ec727bdd0ea2fc9d7ffce5245a1737",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "cpu_util",
+        "label": "CPU 占用率",
+        "unit": "%",
+        "target": "<70"
+      },
+      {
+        "key": "fps_perception",
+        "label": "感知帧率",
+        "unit": "fps",
+        "target": "30"
+      },
+      {
+        "key": "delay_e2e",
+        "label": "端到端时延",
+        "unit": "ms",
+        "target": "<120"
+      }
+    ],
     "sub_items": [
       {
         "id": "deepperf",
@@ -26,7 +45,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "DeepPerf 功能维护、完善与优化",
@@ -42,7 +61,20 @@
     "name": "开发环境准备",
     "order": 2,
     "owner_open_id": "ou_c4433a950aebfa7ebcdd13620ee6aecb",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "build_pass",
+        "label": "主线构建通过率",
+        "unit": "%",
+        "target": "≥98"
+      },
+      {
+        "key": "ci_duration",
+        "label": "CI 平均耗时",
+        "unit": "min",
+        "target": "<25"
+      }
+    ],
     "sub_items": [
       {
         "id": "ota-build",
@@ -61,7 +93,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "CICD APP/BSP 门禁 + 打包支持",
@@ -77,7 +109,25 @@
     "name": "Ut(单元测试)",
     "order": 3,
     "owner_open_id": "ou_e4814d969b5108b8f11893107daa27ce",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "coverage",
+        "label": "行覆盖率",
+        "unit": "%",
+        "target": "≥70"
+      },
+      {
+        "key": "ut_pass",
+        "label": "UT 通过率",
+        "unit": "%",
+        "target": "100"
+      },
+      {
+        "key": "failing",
+        "label": "失败用例数",
+        "target": "0"
+      }
+    ],
     "sub_items": [
       {
         "id": "auto-ut",
@@ -96,7 +146,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "auto_ut 最终版本定稿",
@@ -113,7 +163,19 @@
     "name": "开源框架/协议 qnx 迁移",
     "order": 4,
     "owner_open_id": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "migrated_pkgs",
+        "label": "已迁移组件",
+        "unit": "个",
+        "target": "42"
+      },
+      {
+        "key": "blockers",
+        "label": "阻塞项",
+        "target": "0"
+      }
+    ],
     "sub_items": [
       {
         "id": "ros2-adaptation",
@@ -137,7 +199,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "ros2 py 支持完成",
@@ -155,7 +217,20 @@
     "name": "模型推理及推理框架",
     "order": 5,
     "owner_open_id": "ou_43a6d27bd8d7a5a426a7d8380bba99ac",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "infer_latency",
+        "label": "推理时延",
+        "unit": "ms",
+        "target": "<35"
+      },
+      {
+        "key": "throughput",
+        "label": "吞吐",
+        "unit": "qps",
+        "target": "≥120"
+      }
+    ],
     "sub_items": [
       {
         "id": "model-integration",
@@ -184,7 +259,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -195,7 +270,20 @@
     "name": "感知集成",
     "order": 6,
     "owner_open_id": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "obj_recall",
+        "label": "目标召回率",
+        "unit": "%",
+        "target": "≥95"
+      },
+      {
+        "key": "lane_acc",
+        "label": "车道线准确率",
+        "unit": "%",
+        "target": "≥96"
+      }
+    ],
     "sub_items": [
       {
         "id": "param2-switch",
@@ -204,7 +292,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -215,7 +303,19 @@
     "name": "主线/泊车集成",
     "order": 7,
     "owner_open_id": "ou_51d8d0fd13abbd9cf6673553bb3abc63",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "integration_pass",
+        "label": "联调通过率",
+        "unit": "%",
+        "target": "≥90"
+      },
+      {
+        "key": "open_bugs",
+        "label": "未关闭 bug",
+        "target": "<15"
+      }
+    ],
     "sub_items": [
       {
         "id": "mainline-integration",
@@ -234,7 +334,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -245,10 +345,23 @@
     "name": "数据回传",
     "order": 8,
     "owner_open_id": "ou_6a019448419b24a3cc3751ede1d89a36",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "daily_upload_gb",
+        "label": "日回传量",
+        "unit": "GB",
+        "target": "≥800"
+      },
+      {
+        "key": "loss_rate",
+        "label": "丢包率",
+        "unit": "%",
+        "target": "<1"
+      }
+    ],
     "sub_items": [],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -259,10 +372,23 @@
     "name": "自动化能效提升专项",
     "order": 9,
     "owner_open_id": "ou_d021a8b922e51bc09a5b5ca69a319557",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "auto_rate",
+        "label": "流程自动化率",
+        "unit": "%",
+        "target": "≥80"
+      },
+      {
+        "key": "manual_saved",
+        "label": "节省人时",
+        "unit": "h/周",
+        "target": "≥40"
+      }
+    ],
     "sub_items": [],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "FT HIL 流水线上线",
@@ -278,10 +404,23 @@
     "name": "数采专项",
     "order": 10,
     "owner_open_id": "ou_6a019448419b24a3cc3751ede1d89a36",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "mileage",
+        "label": "周采集里程",
+        "unit": "km",
+        "target": "≥3000"
+      },
+      {
+        "key": "scene_cov",
+        "label": "场景覆盖率",
+        "unit": "%",
+        "target": "≥85"
+      }
+    ],
     "sub_items": [],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {
       "monthly_goal": [
         "AY7 数采开发"
@@ -296,7 +435,19 @@
     "name": "标定",
     "order": 11,
     "owner_open_id": "ou_e6d3b8112f03ce5859fc5c1b1c80c5b5",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "calib_pass",
+        "label": "标定通过率",
+        "unit": "%",
+        "target": "≥98"
+      },
+      {
+        "key": "vehicles",
+        "label": "已完成车辆",
+        "unit": "台"
+      }
+    ],
     "sub_items": [
       {
         "id": "param1-to-param2-mcap",
@@ -330,7 +481,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -341,7 +492,20 @@
     "name": "回灌",
     "order": 12,
     "owner_open_id": "ou_a9085a40fbafbe2957ed1bdcee2d3705",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "scene_total",
+        "label": "回灌场景库",
+        "unit": "个",
+        "target": "≥5000"
+      },
+      {
+        "key": "weekly_runs",
+        "label": "周回灌次数",
+        "unit": "次",
+        "target": "≥200"
+      }
+    ],
     "sub_items": [
       {
         "id": "drive-replay",
@@ -355,7 +519,7 @@
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
@@ -366,10 +530,27 @@
     "name": "人力/非人力资源",
     "order": 13,
     "owner_open_id": "ou_5585cc420bde9bdf016f8367fb20bac0",
-    "kpi_fields": [],
+    "kpi_fields": [
+      {
+        "key": "hr_fill",
+        "label": "人力满足度",
+        "unit": "%",
+        "target": "100"
+      },
+      {
+        "key": "budget_use",
+        "label": "全年预算使用",
+        "unit": "%"
+      },
+      {
+        "key": "chip_ship",
+        "label": "芯片出货达成",
+        "unit": "%"
+      }
+    ],
     "sub_items": [],
     "created_at": "2026-05-23T19:00:00+08:00",
-    "updated_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T20:00:00+08:00",
     "metadata": {}
   },
   {
