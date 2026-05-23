@@ -50,6 +50,10 @@
     "name": "上汽 AS33",            // 显示名,可改
     "order": 1,
     "archived": false,
+    "milestones": [                // LTC 自有里程碑,与 pdt.milestones 完全解耦
+      { "name": "AS33 PV 启动", "date": "2026-04-10", "type": "TR", "note": "" },
+      { "name": "AS33 SOP", "date": "2026-09-01", "type": "SOP", "note": "" }
+    ],
     "created_at": "2026-05-22T...",
     "updated_at": "2026-05-22T...",
     "metadata": {}
@@ -73,9 +77,17 @@
 
 ### 4.3 里程碑
 
-- 字段:`name`(必填,字符串)、`date`(必填,ISO 日期 `YYYY-MM-DD`)、`type`(枚举:`TR`/`SOP`/`review`/`other`)、`note`(可空)
+- **归属规则**:`pdt.milestones` 与 `ltcs[*].milestones` **完全解耦**,各自独立维护
+  - PDT 里程碑:产品线级关键节点(如 TR4-2、A 点 SOP),在 PDT 总览页时间轴展示
+  - LTC 里程碑:子项目自有节点(如该 LTC 的 PV/SOP/OTA),仅在该 LTC 主页面时间轴展示
+  - **不存在隐式继承或叠加显示**;若同一节点对两层都重要,需在两处分别录入
+- 字段:`name`(必填,字符串)、`date`(必填,ISO 日期 `YYYY-MM-DD`)、`type`(自由字符串,推荐使用约定值)、`note`(可空)
+- `type` 约定值(前端按此映射形状/颜色,未列值降级为灰色圆点):
+  - `TR` 蓝色三角 △ · `SOP` 红色菱形 ◇ · `OTA` 紫色三角 △
+  - `review` 青色五角星 ☆ · `goal` 橙色实心星 ★ · `Block` 黄色实心方块 ■
+  - 新增类型时同步更新 `frontend/src/components/TimelineBar.vue::TYPE_STYLE` 与本表
 - 按 `date` 升序展示
-- 同一 PDT 下,(`name`+`date`)组合应唯一
+- 同一作用域(PDT 或某 LTC)下,(`name`+`date`)组合应唯一
 
 ### 4.4 归档(`archived`)
 
@@ -100,9 +112,10 @@
 
 ### 5.2 修改 LTC
 
-- 可改:`name`、`order`、`archived`、`metadata`
+- 可改:`name`、`order`、`archived`、`milestones`、`metadata`
 - 不可改:`id`、`created_at`
 - 改任意字段都必须刷新 `updated_at`
+- 增删/调整 `milestones` 视为 LTC 更新,刷新 `ltcs[i].updated_at`;不冻结快照
 
 ### 5.3 删除 LTC
 
@@ -125,7 +138,7 @@
 
 - 多 PDT 聚合视图:超出单实例范围,不在本约束内
 - LTC 子分组(如按车厂/平台分组):新增可选字段 `group`,默认 `null`,前端按 group 折叠展示
-- 里程碑挂载到 LTC:若未来某些里程碑属于 LTC 而非 PDT,新增 `ltcs[*].milestones`,与 `pdt.milestones` 互不替代
+- 里程碑分层展示(如 LTC 时间轴上叠加 PDT 基线):未来如需 cross-scope 叠加显示,需新增独立约束章节,本版本明确**不支持**
 
 ## 8. 关联文档
 

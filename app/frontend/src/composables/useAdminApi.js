@@ -33,9 +33,6 @@ export const adminApi = {
   // Auto-freeze config
   getAutoFreeze: () => api.get('/api/config/auto_freeze'),
   updateAutoFreeze: (body) => api.put('/api/config/auto_freeze', body),
-
-  // Seed
-  seedDemo: () => api.post('/api/seed/demo'),
 }
 
 export function newId() {

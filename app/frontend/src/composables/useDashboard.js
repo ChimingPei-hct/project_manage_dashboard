@@ -52,9 +52,10 @@ function setWeek(w) {
 const isReadonly = computed(() => !!week.value)
 
 const modulesByScope = computed(() => {
-  const groups = { pdt: [], ltc: {} }
+  const groups = { pdt: [], ltc_template: [], ltc: {} }
   for (const m of modules.value) {
     if (m.scope === 'pdt') groups.pdt.push(m)
+    else if (m.scope === 'ltc_template') groups.ltc_template.push(m)
     else if (m.scope === 'ltc') {
       if (!groups.ltc[m.ltc_id]) groups.ltc[m.ltc_id] = []
       groups.ltc[m.ltc_id].push(m)
@@ -62,6 +63,23 @@ const modulesByScope = computed(() => {
   }
   return groups
 })
+
+/** 给定 LTC 在主页面展示的全部模块(模板 + 自有增量),按 order 升序。 */
+function ltcVisibleModules(ltcId) {
+  if (!ltcId) return []
+  const tpl = modulesByScope.value.ltc_template || []
+  const own = modulesByScope.value.ltc[ltcId] || []
+  return [...tpl, ...own].slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+}
+
+/** 给定模块在某 LTC 上下文中的 status key:模板模块需复合键,其他用 module.id。 */
+function statusKeyOf(module, ltcId) {
+  if (!module) return ''
+  if (module.scope === 'ltc_template') {
+    return ltcId ? `${ltcId}::${module.id}` : module.id
+  }
+  return module.id
+}
 
 let sseStarted = false
 function startSSE() {
@@ -76,6 +94,7 @@ export function useDashboard() {
   return {
     pdt, ltcs, modules, status, week, loading, error,
     isReadonly, modulesByScope,
+    ltcVisibleModules, statusKeyOf,
     refresh, setWeek, startSSE,
   }
 }

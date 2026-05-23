@@ -14,6 +14,8 @@ const props = defineProps({
   module: { type: Object, default: null },
   current: { type: Object, default: () => ({}) },
   focusSubId: { type: String, default: '' },
+  // 复合键 <ltc_id>::<module_id> 用于 ltc_template 模块;留空则用 module.id 兜底
+  statusKey: { type: String, default: '' },
 })
 const emit = defineEmits(['close', 'saved'])
 
@@ -87,7 +89,8 @@ async function save() {
       const t = (v || '').trim()
       if (t) cleanSubRisks[k] = t
     }
-    await api.put(`/api/status/${props.module.id}`, {
+    const key = props.statusKey || props.module.id
+    await api.put(`/api/status/${encodeURIComponent(key)}`, {
       module_color: moduleColor.value,
       sub_items_color: subColors.value,
       sub_items_risk: cleanSubRisks,

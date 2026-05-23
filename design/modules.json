@@ -1,0 +1,937 @@
+[
+  {
+    "id": "pdt-perf",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "性能专项",
+    "order": 1,
+    "owner_open_id": "ou_b0ec727bdd0ea2fc9d7ffce5245a1737",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "deepperf",
+        "name": "DeepPerf 服务与数据迁移",
+        "order": 1
+      },
+      {
+        "id": "delay-stat",
+        "name": "delay 统计方案优化",
+        "order": 2
+      },
+      {
+        "id": "kev-stat",
+        "name": "kev 数据采集与解析优化",
+        "order": 3
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "DeepPerf 功能维护、完善与优化",
+        "项目性能分析和优化"
+      ]
+    }
+  },
+  {
+    "id": "pdt-devenv",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "开发环境准备",
+    "order": 2,
+    "owner_open_id": "ou_c4433a950aebfa7ebcdd13620ee6aecb",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "ota-build",
+        "name": "OTA 出包",
+        "order": 1
+      },
+      {
+        "id": "hil-test",
+        "name": "台架测试",
+        "order": 2
+      },
+      {
+        "id": "code-gate",
+        "name": "代码门禁",
+        "order": 3
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "CICD APP/BSP 门禁 + 打包支持",
+        "APP 日常构建支持"
+      ]
+    }
+  },
+  {
+    "id": "pdt-ut",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "Ut(单元测试)",
+    "order": 3,
+    "owner_open_id": "ou_e4814d969b5108b8f11893107daa27ce",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "auto-ut",
+        "name": "auto_ut 5.0",
+        "order": 1
+      },
+      {
+        "id": "auto-ut-batch",
+        "name": "auto_ut_batch",
+        "order": 2
+      },
+      {
+        "id": "vcast24",
+        "name": "vcast24 适配",
+        "order": 3
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "auto_ut 最终版本定稿",
+        "auto_ut_batch 批量执行规范输出",
+        "vcast 24 license 自动化方案"
+      ]
+    }
+  },
+  {
+    "id": "pdt-qnx-migration",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "框架与迁移",
+    "name": "开源框架/协议 qnx 迁移",
+    "order": 4,
+    "owner_open_id": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "ros2-adaptation",
+        "name": "ROS2 适配(AY7/BTET/FT/ZS32)",
+        "order": 1
+      },
+      {
+        "id": "ros2-upgrade",
+        "name": "ros2 升级",
+        "order": 2
+      },
+      {
+        "id": "gateway",
+        "name": "Gateway",
+        "order": 3
+      },
+      {
+        "id": "dvr",
+        "name": "DVR",
+        "order": 4
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "ros2 py 支持完成",
+        "释放 ros2 给知行",
+        "ros2 第一轮裁剪",
+        "py 库支持完成"
+      ]
+    }
+  },
+  {
+    "id": "pdt-model-inference",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "集成",
+    "name": "模型推理及推理框架",
+    "order": 5,
+    "owner_open_id": "ou_43a6d27bd8d7a5a426a7d8380bba99ac",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "model-integration",
+        "name": "模型集成",
+        "order": 1
+      },
+      {
+        "id": "model-perf",
+        "name": "性能",
+        "order": 2
+      },
+      {
+        "id": "overseas-single-pkg",
+        "name": "海外左右舵单包",
+        "order": 3
+      },
+      {
+        "id": "fisheye-sparse4d",
+        "name": "3v 鱼眼 sparse4d",
+        "order": 4
+      },
+      {
+        "id": "tld-depth",
+        "name": "tld+depth",
+        "order": 5
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-perception",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "集成",
+    "name": "感知集成",
+    "order": 6,
+    "owner_open_id": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "param2-switch",
+        "name": "param2 切换",
+        "order": 1
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-mainline-parking",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "集成",
+    "name": "主线/泊车集成",
+    "order": 7,
+    "owner_open_id": "ou_51d8d0fd13abbd9cf6673553bb3abc63",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "mainline-integration",
+        "name": "主线集成",
+        "order": 1
+      },
+      {
+        "id": "parking-perception",
+        "name": "泊车感知",
+        "order": 2
+      },
+      {
+        "id": "hmi-hde",
+        "name": "HMI/HDE",
+        "order": 3
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-data-feedback",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "数据回传",
+    "order": 8,
+    "owner_open_id": "ou_6a019448419b24a3cc3751ede1d89a36",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-auto-efficiency",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "自动化能效提升专项",
+    "order": 9,
+    "owner_open_id": "ou_d021a8b922e51bc09a5b5ca69a319557",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "FT HIL 流水线上线",
+        "ID4 性能流水线上线"
+      ]
+    }
+  },
+  {
+    "id": "pdt-data-collection",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "数采专项",
+    "order": 10,
+    "owner_open_id": "ou_6a019448419b24a3cc3751ede1d89a36",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "monthly_goal": [
+        "AY7 数采开发"
+      ]
+    }
+  },
+  {
+    "id": "pdt-calibration",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "标定",
+    "order": 11,
+    "owner_open_id": "ou_e6d3b8112f03ce5859fc5c1b1c80c5b5",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "param1-to-param2-mcap",
+        "name": "param1→param2 mcap 转换",
+        "order": 1
+      },
+      {
+        "id": "front-mono-merge",
+        "name": "front 切 front_mono 合入",
+        "order": 2
+      },
+      {
+        "id": "saic-aftersales",
+        "name": "上汽售后背景标定光流算法",
+        "order": 3
+      },
+      {
+        "id": "geely-test",
+        "name": "吉利测试用例",
+        "order": 4
+      },
+      {
+        "id": "kx21-mmc-zs32-design",
+        "name": "kx21/mmc/zs32 小域控设计",
+        "order": 5
+      },
+      {
+        "id": "zs32-ecu-cal",
+        "name": "zs32 小域控标定联调",
+        "order": 6
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-replay",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "工具链与专项",
+    "name": "回灌",
+    "order": 12,
+    "owner_open_id": "ou_a9085a40fbafbe2957ed1bdcee2d3705",
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "drive-replay",
+        "name": "行车回灌",
+        "order": 1
+      },
+      {
+        "id": "param2-cloud-replay",
+        "name": "param2 云端回灌",
+        "order": 2
+      }
+    ],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "pdt-resources",
+    "scope": "pdt",
+    "ltc_id": null,
+    "group": "资源",
+    "name": "人力/非人力资源",
+    "order": 13,
+    "owner_open_id": "ou_5585cc420bde9bdf016f8367fb20bac0",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-mainline-id4-base-service",
+    "scope": "ltc",
+    "ltc_id": "mainline-id4",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_cfa2107ad7b43c2f4fa578d3e8772bca",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "主线消息裁剪 100+ 无用文件;hil 台架回灌不能进功能调查中;id4 方向盘握手信号增加联调"
+    }
+  },
+  {
+    "id": "ltc-ay7-base-service",
+    "scope": "ltc",
+    "ltc_id": "ay7",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_cfa2107ad7b43c2f4fa578d3e8772bca",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-btet-base-service",
+    "scope": "ltc",
+    "ltc_id": "btet",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_34be37dee83dfbc452d03a8b13fff9b7",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-zs32-allinone-base-service",
+    "scope": "ltc",
+    "ltc_id": "zs32-allinone",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_658540583f0083b8f2d15314bbcf4348",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "防火墙信息上报上线;http/dos 故障上报验证;一体机配置字更新"
+    }
+  },
+  {
+    "id": "ltc-zs32-ecu-base-service",
+    "scope": "ltc",
+    "ltc_id": "zs32-ecu",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_658540583f0083b8f2d15314bbcf4348",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "小域控配置字更新;同步一体机 OTA 验证 OFFER/IP;摄像头 OTA 熟悉中;Uss msg 变更"
+    }
+  },
+  {
+    "id": "ltc-ft-base-service",
+    "scope": "ltc",
+    "ltc_id": "ft",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_d876d1bca4aeb42d1d13f9a08146ab11",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "工厂/用户模式适配;DTC 上报排查;诊断/FM 配置更新;ptp0 与 hct_time 200ms 差异定位"
+    }
+  },
+  {
+    "id": "ltc-mmc-base-service",
+    "scope": "ltc",
+    "ltc_id": "mmc",
+    "group": "集成",
+    "name": "基础服务迁移",
+    "order": 1,
+    "owner_open_id": "ou_87ece67c54c636362c4020ff0040592b",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "ntp 作为初始时间源实车可行性验证;X86 复用海外配置字识别 ntp;J6B 通过 ipcf 给 R 核设置 RTC"
+    }
+  },
+  {
+    "id": "ltc-mainline-id4-data-tools",
+    "scope": "ltc",
+    "ltc_id": "mainline-id4",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_6caaa36a550febdc00758ef45ebc33b8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "【泊车】后台搜车位开发完成,实车验证中"
+    }
+  },
+  {
+    "id": "ltc-ay7-data-tools",
+    "scope": "ltc",
+    "ltc_id": "ay7",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_6caaa36a550febdc00758ef45ebc33b8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "LUNA6-5331 ACC/ICA 接管报警时机优化"
+    }
+  },
+  {
+    "id": "ltc-btet-data-tools",
+    "scope": "ltc",
+    "ltc_id": "btet",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_6caaa36a550febdc00758ef45ebc33b8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "BTETJ6-86/90/95/93/96 完成;进行中 TLR 红绿灯/动态目标显示/SWR"
+    }
+  },
+  {
+    "id": "ltc-zs32-allinone-data-tools",
+    "scope": "ltc",
+    "ltc_id": "zs32-allinone",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_38e3ae26c22830f586bcb2643c4c40b3",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "ICA/ACC 功能状态显示、行驶提醒、接管需求开发完成;0.5.2 LSS/IHBC/TSR 提示完成;硬/软开关调试中"
+    }
+  },
+  {
+    "id": "ltc-zs32-ecu-data-tools",
+    "scope": "ltc",
+    "ltc_id": "zs32-ecu",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_c40504df5ee4683e43c2ed31e5a406ff",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "泊车框架代码完成;APA 台架自测 OK;APA/后台搜车位/RPA/EPA 实车联调开发中"
+    }
+  },
+  {
+    "id": "ltc-ft-data-tools",
+    "scope": "ltc",
+    "ltc_id": "ft",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_6caaa36a550febdc00758ef45ebc33b8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "修复车道线/泊车 slot 缺失/slot topic 错误/is_standby 映射;进行中 fcw 开关映射/行车故障报警/SWR 文档"
+    }
+  },
+  {
+    "id": "ltc-mmc-data-tools",
+    "scope": "ltc",
+    "ltc_id": "mmc",
+    "group": "工具链与专项",
+    "name": "数据工具迁移 / HDE",
+    "order": 2,
+    "owner_open_id": "ou_6caaa36a550febdc00758ef45ebc33b8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-ay7-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "ay7",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_f9620d8c753df409e3068ddd0e8d26f9",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "ReleaseNote Luna6_LC-V9.0.0-WL19-20260511;LTC 标定首车信息同步;PNC 反向依赖修复"
+    }
+  },
+  {
+    "id": "ltc-zs32-allinone-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "zs32-allinone",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_f9620d8c753df409e3068ddd0e8d26f9",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "联调开发中;App 1+n 开发中"
+    }
+  },
+  {
+    "id": "ltc-zs32-ecu-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "zs32-ecu",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_f9620d8c753df409e3068ddd0e8d26f9",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "ReleaseNote Luna6_LC-Develop-20260509_79"
+    }
+  },
+  {
+    "id": "ltc-btet-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "btet",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "4.0 版本集成转测"
+    }
+  },
+  {
+    "id": "ltc-ft-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "ft",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_43dce79f6e7971b1507f42ad74c73773",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "bsp v8→v10 完成;热拔插/出流问题解决;新增泊车信号 topic 联调;时间同步功能上线 delay"
+    }
+  },
+  {
+    "id": "ltc-mmc-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "mmc",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_ee5b2fa0e6fc5e60362376fa07abeea2",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "V3.0.0 内部版本转测;进场版本 V3.0.2 集成"
+    }
+  },
+  {
+    "id": "ltc-zp22-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "zp22",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "分支并线已完成"
+    }
+  },
+  {
+    "id": "ltc-ecarx-kx21-fullstack-pnc",
+    "scope": "ltc",
+    "ltc_id": "ecarx-kx21",
+    "group": "集成",
+    "name": "全栈、规控集成",
+    "order": 3,
+    "owner_open_id": "ou_87ece67c54c636362c4020ff0040592b",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-ay7-acore-os",
+    "scope": "ltc",
+    "ltc_id": "ay7",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_626d8eaf98cbfb6add0474ac1eb14723",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-byd-acore-os",
+    "scope": "ltc",
+    "ltc_id": "byd",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_626d8eaf98cbfb6add0474ac1eb14723",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-ft-acore-os",
+    "scope": "ltc",
+    "ltc_id": "ft",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_84ddecb7a8befdc338a99147c12e96de",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "norflash 分区对齐完成;cpu loading 高定位至启动脚本;soc 卡死调查中;v10 基线升级"
+    }
+  },
+  {
+    "id": "ltc-btet-acore-os",
+    "scope": "ltc",
+    "ltc_id": "btet",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_0b43891f8f9841c4cc6183cb9740c62e",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "PV 版本发版完成"
+    }
+  },
+  {
+    "id": "ltc-zs32-allinone-acore-os",
+    "scope": "ltc",
+    "ltc_id": "zs32-allinone",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_abf27289e9906edb0404a7943160dbc8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ltc-zs32-ecu-acore-os",
+    "scope": "ltc",
+    "ltc_id": "zs32-ecu",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_b645ce9f87dbc0a53b3271a188443140",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "idps 开发完成已同步外仓给 ME;内仓 CICD 打通完成"
+    }
+  },
+  {
+    "id": "ltc-mmc-acore-os",
+    "scope": "ltc",
+    "ltc_id": "mmc",
+    "group": "硬件和底软",
+    "name": "软件底座 - A 核系统及底软",
+    "order": 4,
+    "owner_open_id": "ou_e4e35914e61b024dc482111de5217064",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "v3.0.0 验证发布;Pv 2.2.2 验证发布;pv2.6 功能验证中"
+    }
+  },
+  {
+    "id": "ltc-ay7-mcu",
+    "scope": "ltc",
+    "ltc_id": "ay7",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_e95e84006454dea6d717499ed55d8bf3",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "JIRA-5673 eol 标定压测 hardware reset 引起 ecu 复位;JIRA-5679 偶现 mbdiso 走降级流程"
+    }
+  },
+  {
+    "id": "ltc-byd-mcu",
+    "scope": "ltc",
+    "ltc_id": "byd",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_d219b269c7c29cef281b39b27fb5e78d",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "bringup 软件开发;DV 软件开发;BYD 出差联调中串口刷写成功,Norflash 启动失败排查中"
+    }
+  },
+  {
+    "id": "ltc-btet-mcu",
+    "scope": "ltc",
+    "ltc_id": "btet",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_6b940c7d25feee08901eb2ae63731a0e",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "安全日志开发;国标诊断 ID 与原诊断 ID 共用;V4.0 jira 修复进行中"
+    }
+  },
+  {
+    "id": "ltc-zs32-allinone-mcu",
+    "scope": "ltc",
+    "ltc_id": "zs32-allinone",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_17d49a8c66ea62ac5812f187bd4ec3ae",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "TR/SWR 完成;EOL/售后标定链路联调;DID B0D2 DoS 攻击记录;DID B008 长度 80→100;RTE/VOA/VIA 接口表更新"
+    }
+  },
+  {
+    "id": "ltc-ft-mcu",
+    "scope": "ltc",
+    "ltc_id": "ft",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_996338561a87def0ced6d52281f03da8",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "kx21 RTE 支持 XCP 注入;kx21 RTE V4.3.0 添加 ICCdebug/ACCdebug;客户侧切分区行为分析;SDK100 升级测试支持"
+    }
+  },
+  {
+    "id": "ltc-mmc-mcu",
+    "scope": "ltc",
+    "ltc_id": "mmc",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_7f23e55a47499e83119f3fa68a6b52e0",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "31 服务权限区分;0x3B 服务修复;V3.0.0 软件测试问题;Jira 38/39/44/47/57-71;Monitor RTE 完成"
+    }
+  },
+  {
+    "id": "ltc-zs32-ecu-mcu",
+    "scope": "ltc",
+    "ltc_id": "zs32-ecu",
+    "group": "硬件和底软",
+    "name": "软件底座 - MCU",
+    "order": 5,
+    "owner_open_id": "ou_54e40be083adb2771715aabe2b981163",
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "weekly_progress": "算法查找下行链路问题已查到,已同步 ME;Monitor 模块代码开发完成"
+    }
+  }
+]

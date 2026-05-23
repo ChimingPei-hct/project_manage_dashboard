@@ -141,6 +141,88 @@ def test_put_status_writes_history(as_owner_this):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/modules scope=ltc_template — Super/PDT Admin ✅;其他 403
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("role_fixture,expected", [
+    ("as_super", 200),
+    ("as_pdt_admin", 200),
+    ("as_ltc_admin_this", 403),
+    ("as_ltc_admin_other", 403),
+    ("as_owner_this", 403),
+    ("as_guest", 403),
+])
+def test_post_module_ltc_template_scope(request, role_fixture, expected):
+    c = request.getfixturevalue(role_fixture)
+    r = c.post("/api/modules", json={
+        "id": f"mod-tpl-{role_fixture}", "scope": "ltc_template",
+        "group": "G", "name": "T",
+    })
+    assert r.status_code == expected
+
+
+def test_post_module_ltc_template_rejects_ltc_id(as_super):
+    r = as_super.post("/api/modules", json={
+        "id": "mod-tpl-bad", "scope": "ltc_template", "ltc_id": SAMPLE_LTC_ID,
+        "group": "G", "name": "T",
+    })
+    assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# PUT /api/status/{ltc_id}::{module_id} on ltc_template — Super/PDT/对应 LTC Admin ✅
+# ---------------------------------------------------------------------------
+
+TPL_MODULE_ID = "mod-tpl-shared"
+
+
+def _seed_template_module(client_tuple):
+    c, m = client_tuple
+    from .conftest import SUPER_OID, _login_cookie
+    saved = dict(c.cookies)
+    c.cookies.clear()
+    c.cookies.update(_login_cookie(m, SUPER_OID))
+    r = c.post("/api/modules", json={
+        "id": TPL_MODULE_ID, "scope": "ltc_template",
+        "group": "G", "name": "Template",
+    })
+    assert r.status_code == 200
+    c.cookies.clear()
+    c.cookies.update(saved)
+
+
+@pytest.mark.parametrize("role_fixture,expected", [
+    ("as_super", 200),
+    ("as_pdt_admin", 200),
+    ("as_ltc_admin_this", 200),
+    ("as_ltc_admin_other", 403),
+    ("as_owner_this", 403),  # 模板模块未设 owner
+    ("as_guest", 403),
+])
+def test_put_status_ltc_template(request, client, role_fixture, expected):
+    _seed_template_module(client)
+    c = request.getfixturevalue(role_fixture)
+    r = c.put(f"/api/status/{SAMPLE_LTC_ID}::{TPL_MODULE_ID}", json={
+        "module_color": "green",
+        "risk_note": "",
+    })
+    assert r.status_code == expected
+
+
+def test_put_status_ltc_template_requires_compound_key(client, as_super):
+    _seed_template_module(client)
+    # 平铺键访问模板模块 → 422
+    r = as_super.put(f"/api/status/{TPL_MODULE_ID}", json={"module_color": "green"})
+    assert r.status_code == 422
+
+
+def test_put_status_compound_key_on_non_template_module(as_super):
+    # 普通 LTC 模块用复合键 → 422
+    r = as_super.put(f"/api/status/{SAMPLE_LTC_ID}::{SAMPLE_MODULE_ID}", json={"module_color": "green"})
+    assert r.status_code == 422
+
+
+# ---------------------------------------------------------------------------
 # POST /api/snapshots/freeze — Super/PDT Admin ✅;其他 403
 # ---------------------------------------------------------------------------
 

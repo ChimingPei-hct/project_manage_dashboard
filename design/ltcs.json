@@ -1,0 +1,115 @@
+[
+  {
+    "id": "mainline-id4",
+    "name": "主线 ID4",
+    "order": 1,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "jira_prefix": "LUNA6"
+    }
+  },
+  {
+    "id": "ay7",
+    "name": "AY7(白云山 / 广汽)",
+    "order": 2,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "customer": "广汽",
+      "code_name": "白云山",
+      "jira_prefix": "LUNA6",
+      "customer_req_wiki": "CJyCwaMytiLFG0khk4Ac25CPndd",
+      "sysarch_wiki": "IiYzw5UJdiqloMkDnh8c9hTDnJd",
+      "feature_list_wiki": "QqpiwifZli9OwQkjhsxcIEiwnTh"
+    }
+  },
+  {
+    "id": "btet",
+    "name": "BTET",
+    "order": 3,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "jira_prefix": "BTETJ6"
+    }
+  },
+  {
+    "id": "zs32-allinone",
+    "name": "ZS32 一体机",
+    "order": 4,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "variant": "一体机"
+    }
+  },
+  {
+    "id": "zs32-ecu",
+    "name": "ZS32 小域控",
+    "order": 5,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "variant": "小域控"
+    }
+  },
+  {
+    "id": "zp22",
+    "name": "ZP22",
+    "order": 6,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "ft",
+    "name": "FT (KX21)",
+    "order": 7,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "hw_platform": "KX21"
+    }
+  },
+  {
+    "id": "mmc",
+    "name": "MMC",
+    "order": 8,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "scope": "国内+海外"
+    }
+  },
+  {
+    "id": "byd",
+    "name": "BYD",
+    "order": 9,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "stage": "bringup/DV"
+    }
+  },
+  {
+    "id": "ecarx-kx21",
+    "name": "ECarx KX21",
+    "order": 10,
+    "archived": false,
+    "created_at": "2026-05-23T19:00:00+08:00",
+    "updated_at": "2026-05-23T19:00:00+08:00",
+    "metadata": {
+      "hw_platform": "KX21"
+    }
+  }
+]

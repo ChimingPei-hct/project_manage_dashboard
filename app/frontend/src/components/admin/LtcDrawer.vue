@@ -1,14 +1,18 @@
 <script setup>
 /* 单个 LTC 详细抽屉:基础信息 + 该 LTC 下模块快速管理(新增模块 + 链接到模块详情) */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
+import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import ConfirmDialog from '../harness/ConfirmDialog.vue'
+import OwnerChip from '../OwnerChip.vue'
 
 const props = defineProps({ ltcId: { type: String, required: true } })
 const emit = defineEmits(['pick-module', 'deleted'])
 
 const { ltcs, modules, refresh } = useDashboard()
+const { ensureContacts } = useContactCache()
+onMounted(() => { ensureContacts() })
 const ltc = computed(() => (ltcs.value || []).find(l => l.id === props.ltcId))
 const mods = computed(() =>
   (modules.value || [])
@@ -138,7 +142,7 @@ async function toggleArchive() {
           <span class="n">{{ m.name }}</span>
           <span class="sub-count">{{ (m.sub_items || []).length }} 子项</span>
           <span class="kpi-count">{{ (m.kpi_fields || []).length }} KPI</span>
-          <span class="owner">{{ m.owner_open_id || '未指派' }}</span>
+          <OwnerChip :open-id="m.owner_open_id" fallback="未指派" />
         </button>
       </div>
     </section>

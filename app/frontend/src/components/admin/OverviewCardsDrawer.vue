@@ -1,12 +1,16 @@
 <script setup>
 /* PDT 总览卡片管理:scope=pdt 的 modules 一一对应一个卡片 */
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
+import { useContactCache, displayName } from '../../composables/useContactCache.js'
+import OwnerChip from '../OwnerChip.vue'
 
 const emit = defineEmits(['pick-module'])
 
 const { modules, refresh } = useDashboard()
+const { ensureContacts } = useContactCache()
+onMounted(() => { ensureContacts() })
 const cards = computed(() =>
   (modules.value || [])
     .filter(m => m.scope === 'pdt')
@@ -98,7 +102,7 @@ const PRESET_GROUPS = ['项目', '市场/产品', '质量', '产品指标', '研
             <span class="nm">{{ c.name }}</span>
             <span class="metrics">
               <span class="metric">{{ (c.kpi_fields || []).length }} KPI</span>
-              <span class="metric">{{ c.owner_open_id || '未指派 Owner' }}</span>
+              <OwnerChip :open-id="c.owner_open_id" fallback="未指派 Owner" />
             </span>
           </button>
           <div class="ops">

@@ -135,14 +135,18 @@ def test_module_delete_cascades_status_and_history(as_super):
 
 
 def test_module_scope_pdt_must_have_null_ltc(as_super):
-    """API 行为:创建 scope=pdt 时,ltc_id 字段被强制设为 null(即使请求带了值)。"""
+    """API 行为:创建 scope=pdt 时若带 ltc_id,显式拒绝 422(对齐 design/06 §8)。"""
     mid = uuid.uuid4().hex
     r = as_super.post("/api/modules", json={
-        "id": mid, "scope": "pdt", "ltc_id": SAMPLE_LTC_ID,  # 多余的 ltc_id
+        "id": mid, "scope": "pdt", "ltc_id": SAMPLE_LTC_ID,
         "group": "G", "name": "pdt-mod",
     })
-    assert r.status_code == 200
-    assert r.json()["ltc_id"] is None
+    assert r.status_code == 422
+    r2 = as_super.post("/api/modules", json={
+        "id": mid, "scope": "pdt", "group": "G", "name": "pdt-mod",
+    })
+    assert r2.status_code == 200
+    assert r2.json()["ltc_id"] is None
 
 
 def test_module_scope_ltc_requires_ltc_id(as_super):
@@ -181,47 +185,6 @@ def test_status_write_history_consistency(as_super):
 def test_status_color_must_be_valid(as_super):
     r = as_super.put(f"/api/status/{SAMPLE_MODULE_ID}", json={"module_color": "blue", "risk_note": "x"})
     assert r.status_code == 422
-
-
-# ---------------------------------------------------------------------------
-# Seed demo
-# ---------------------------------------------------------------------------
-
-def test_seed_demo_requires_super(as_pdt_admin):
-    r = as_pdt_admin.post("/api/seed/demo")
-    assert r.status_code == 403
-
-
-def test_seed_demo_refuses_when_data_exists(as_super):
-    # conftest 已经预置了 ltcs/modules,seed 应 409
-    r = as_super.post("/api/seed/demo")
-    assert r.status_code == 409
-
-
-def test_seed_demo_empty_instance(client):
-    """在空实例(只有 admin 配置,无 ltcs/modules)上 seed 应成功。"""
-    c, m = client
-    # 清空 ltcs/modules,保留 super_admins
-    from pathlib import Path
-    import json
-    dd = Path(m.DATA_DIR)
-    (dd / "ltcs.json").write_text("[]")
-    (dd / "modules.json").write_text("[]")
-    (dd / "module_status.json").write_text("{}")
-    # 登录 super
-    from .conftest import SUPER_OID, _login_cookie
-    c.cookies.update(_login_cookie(m, SUPER_OID))
-    r = c.post("/api/seed/demo")
-    assert r.status_code == 200, r.text
-    body = r.json()
-    assert body["ok"] is True
-    assert "ltc_id" in body
-    # 校验创建结果
-    assert len(c.get("/api/ltcs").json()) == 1
-    mods = c.get("/api/modules").json()
-    assert len(mods) == 3
-    assert any(mm["scope"] == "pdt" for mm in mods)
-    assert any(mm["scope"] == "ltc" for mm in mods)
 
 
 # ---------------------------------------------------------------------------

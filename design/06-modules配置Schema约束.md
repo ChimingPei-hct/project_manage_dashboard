@@ -28,9 +28,9 @@
 
 ```jsonc
 {
-  "id": "ltc-as33-mcu-bsw",          // 必填,稳定标识
-  "scope": "ltc",                     // 必填,枚举:"pdt" | "ltc"
-  "ltc_id": "as33",                   // scope=ltc 必填且引用 ltcs[].id;scope=pdt 必须为 null
+  "id": "ltc-tpl-mcu-bsw",            // 必填,稳定标识
+  "scope": "ltc_template",            // 必填,枚举:"pdt" | "ltc_template" | "ltc"
+  "ltc_id": null,                     // scope=ltc 必填;scope=pdt / ltc_template 必须为 null
   "group": "硬件和底软",                // 必填,分组名(字符串)
   "name": "MCU 底软",                   // 必填,显示名
   "order": 1,                         // 必填,整数,同 group 内排序
@@ -55,16 +55,20 @@
 - 必填,字符串,正则 `^[a-z][a-z0-9-]{1,63}$`
 - 创建后不可改
 - 全局唯一(跨 scope 唯一)
-- 推荐命名:`<scope>-<ltc_id?>-<slug>`,例如 `pdt-quality`、`ltc-as33-perception`
+- 推荐命名:`<scope>-<ltc_id?>-<slug>`,例如 `pdt-quality`、`ltc-tpl-perception`(template)、`ltc-as33-bench`(LTC 增量)
 
 ### 5.2 `scope`
 
-- 枚举 `"pdt"` 或 `"ltc"`,不可空,不可改
+- 枚举 `"pdt"` / `"ltc_template"` / `"ltc"`,不可空,不可改
+- 语义:
+  - `pdt`:PDT 总览模块(通常带 `kpi_fields`),仅在 PDT 总览页展示;状态键 = `module.id`
+  - `ltc_template`:**所有 LTC 共享的模板模块**(通常带 `sub_items`)。在每个 LTC 主页面自动渲染同一份模块定义,但状态按 LTC 独立填报
+  - `ltc`:**单个 LTC 的自有增量模块**(`ltc_id` 必填),仅该 LTC 主页面展示
 
 ### 5.3 `ltc_id`
 
 - `scope=ltc`:必填,且必须存在于 `ltcs.json` 的 `id` 集合中
-- `scope=pdt`:必须为 `null`
+- `scope=pdt` / `scope=ltc_template`:必须为 `null`
 - 创建后不可改(LTC 间不可"搬移"模块,如需变更:删除重建)
 
 ### 5.4 `group`
@@ -117,9 +121,9 @@
 
 ## 6. 引用一致性
 
-- `ltc_id` → 必须在 `ltcs.json` 中存在
+- `ltc_id` → 必须在 `ltcs.json` 中存在(仅 `scope=ltc` 有此字段)
 - `owner_open_id` → 推荐在 `user_registry.json` 中存在(校验时 warning,不阻断)
-- 删除 LTC 时:必须先删除/迁移所有 `ltc_id == 该 LTC` 的模块(归档 LTC 不强制)
+- 删除 LTC 时:必须先删除/迁移所有 `scope=ltc & ltc_id==该 LTC` 的模块(归档 LTC 不强制);`scope=ltc_template` 模块不受影响,但该 LTC 在 `module_status.json` 中对应的 `<ltc_id>::<template_module_id>` 状态键应同步清理
 - 校验脚本 `validate_data_files.py` 必须覆盖上述引用一致性
 
 ## 7. 执行约束
@@ -148,10 +152,13 @@
 - **禁止跨 scope 复用同一 id**
 - **禁止 owner_open_id 写成人名/邮箱**(必须 open_id;显示名走 `user_registry`)
 - **禁止同一模块的 `sub_items[].id` 重复**
+- **禁止 `scope=ltc_template` 模块带 `ltc_id`**(后端 422)
+- **禁止把模板模块"实例化"为 scope=ltc 模块的副本** — 模板与增量是两类不同 scope,前端在 LTC 主页统一合并展示;若要从模板派生 LTC 自有版本,只能手动创建新的 `scope=ltc` 模块,不做引用关系
 
 ## 9. 扩展方式
 
-- 跨 LTC 横切模块:新增 `scope="shared"` 配合 `ltc_ids: []`
+- 跨 LTC 横切模块:已通过 `scope=ltc_template` 解决,无需 `scope=shared`
+- 模板模块可见性细化(如某些模板对部分 LTC 隐藏):未来新增可选 `template_excludes: [ltc_id...]`,本版本不支持
 - 模块层级嵌套(模块下挂子模块而非子项):升级本文件,定义 `parent_id` 字段
 
 ## 10. 关联文档

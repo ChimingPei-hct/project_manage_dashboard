@@ -183,9 +183,6 @@ GET    /api/users/search                  # ?q=&limit=  v1 数据源 user_regist
 GET    /api/admins
 PUT    /api/admins/{role}                 # role ∈ super | pdt | ltc
 
-# Onboarding
-POST   /api/seed/demo                     # 仅 Super,且仅空实例(ltcs+modules 都空);已有数据返 409
-
 # SSE
 GET    /api/events                        # text/event-stream
 ```

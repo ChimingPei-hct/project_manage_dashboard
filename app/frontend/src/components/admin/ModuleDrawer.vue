@@ -1,15 +1,19 @@
 <script setup>
 /* 单个模块的详细编辑抽屉:基础信息、KPI 字段、子项(sub_items)增删改、Owner 绑定 */
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
+import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import UserSearchInput from '../UserSearchInput.vue'
 import ConfirmDialog from '../harness/ConfirmDialog.vue'
+import OwnerChip from '../OwnerChip.vue'
 
 const props = defineProps({ moduleId: { type: String, required: true } })
 const emit = defineEmits(['deleted'])
 
 const { modules, ltcs, refresh } = useDashboard()
+const { ensureContacts } = useContactCache()
+onMounted(() => { ensureContacts() })
 const module = computed(() => (modules.value || []).find(m => m.id === props.moduleId))
 const ltcName = computed(() => ltcs.value.find(l => l.id === module.value?.ltc_id)?.name || '')
 
@@ -130,7 +134,7 @@ async function doDelete() {
               @select="u => { draft.owner_open_id = u.open_id; touch() }"
             />
             <span v-if="draft.owner_open_id" class="owner-pill">
-              {{ draft.owner_open_id }}
+              <OwnerChip :open-id="draft.owner_open_id" />
               <button class="x" v-tooltip="'清除 Owner'" @click="draft.owner_open_id = null; touch()">×</button>
             </span>
           </div>

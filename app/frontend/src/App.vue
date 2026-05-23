@@ -3,17 +3,15 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useAuth } from './composables/useAuth.js'
 import { useDashboard } from './composables/useDashboard.js'
 import { useView } from './composables/useView.js'
-import { adminApi } from './composables/useAdminApi.js'
 import { useAdmins } from './composables/useAdmins.js'
 import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogin.js'
 import PdtOverview from './components/PdtOverview.vue'
-import LtcProgress from './components/LtcProgress.vue'
-import RiskDetail from './components/RiskDetail.vue'
+import LtcMain from './components/LtcMain.vue'
 import AdminPanel from './components/AdminPanel.vue'
 import WeekSwitcher from './components/WeekSwitcher.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
-const { ltcs, modules, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
+const { week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
 const { current, pushView } = useView()
 
 // URL ?week=YYYY-Www ↔ useDashboard.week 双向同步:URL 是单一事实来源
@@ -32,42 +30,20 @@ const isAdminish = computed(() => {
   return Object.values(adminsMap.value.ltc || {}).some(arr => arr.includes(myOid))
 })
 
-const showSeedBtn = computed(() => {
-  if (!me.value?.is_super) return false
-  return (ltcs.value?.length || 0) === 0 && (modules.value?.length || 0) === 0
-})
-
-const seeding = ref(false)
-async function seedDemo() {
-  if (!confirm('将自动创建一份示例 PDT + LTC + 模块作为 onboarding 数据。仅空实例可用。继续?')) return
-  seeding.value = true
-  try {
-    await adminApi.seedDemo()
-    await refresh()
-  } catch (e) {
-    alert(`失败:${e.message}`)
-  } finally { seeding.value = false }
-}
-
 const viewComp = computed(() => {
   switch (current.value.view) {
-    case 'ltc': return LtcProgress
-    case 'risks': return RiskDetail
+    case 'ltc': return LtcMain
+    case 'risks': return LtcMain  // 同一组件,内部按 current.view 决定是否滚到风险锚点
     case 'admin': return AdminPanel
     case 'pdt':
     default: return PdtOverview
   }
 })
 
-const navItems = computed(() => {
-  const base = [
-    { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
-    { view: 'ltc', label: 'LTC 进展', tip: '查看子项目研发进展矩阵' },
-    { view: 'risks', label: '风险详情', tip: '只看本周非绿项与风险说明' },
-  ]
-  if (isAdminish.value) base.push({ view: 'admin', label: '管理', tip: '管理 PDT / LTC / 模块 / 人员' })
-  return base
-})
+const navItems = computed(() => [
+  { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
+  { view: 'ltc', label: 'LTC 进展', tip: '查看子项目研发进展矩阵' },
+])
 
 function nav(view) { pushView({ view, week: current.value.week }) }
 
@@ -131,19 +107,22 @@ onMounted(async () => {
         >{{ n.label }}</button>
       </nav>
       <div class="right">
-        <button
-          v-if="showSeedBtn"
-          class="primary"
-          :disabled="seeding"
-          v-tooltip="'当前实例为空,一键填充一份示例 PDT/LTC/模块,便于演示与上手'"
-          @click="seedDemo"
-        >{{ seeding ? '创建中…' : '+ 示例数据' }}</button>
         <WeekSwitcher />
         <span class="user" v-tooltip="me?.dev_login ? 'Dev 后门身份(本地调试)' : '当前登录用户'">
           {{ me?.name || me?.open_id || '未登录' }}
           <em v-if="me?.is_super">·super</em>
           <em v-else-if="me?.is_pdt_admin">·pdt-admin</em>
         </span>
+        <button
+          v-if="isAdminish"
+          class="icon-btn"
+          :class="{ active: current.view === 'admin' }"
+          v-tooltip="'管理 PDT / LTC / 模块 / 人员'"
+          @click="nav('admin')"
+          aria-label="管理"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
       </div>
     </header>
     <div v-if="isReadonly" class="banner-readonly">
@@ -188,6 +167,24 @@ nav button { font-weight: 500; }
   border: 1px solid var(--border-subtle);
 }
 .user em { font-style: normal; color: var(--accent); margin-left: 4px; font-weight: 600; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  padding: 0;
+  border-radius: 6px;
+  background: var(--panel-soft);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms, background 120ms, border-color 120ms;
+}
+.icon-btn:hover { color: var(--text); background: var(--panel); }
+.icon-btn.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}
+.icon-btn svg { display: block; }
 main { flex: 1; }
 
 .login-screen {

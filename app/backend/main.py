@@ -305,12 +305,36 @@ def is_module_owner(open_id: str | None, module_id: str | None) -> bool:
     return False
 
 
-def can_edit_module_status(open_id: str | None, module_id: str | None) -> bool:
+def parse_status_key(key: str) -> tuple[str | None, str]:
+    """解析 status key,返回 (ltc_id_or_None, module_id)。
+
+    复合键 `<ltc_id>::<module_id>` 用于 scope=ltc_template 模块的逐 LTC 状态;
+    平铺键 `<module_id>` 用于 scope=pdt / scope=ltc 模块。
+    """
+    if STATUS_KEY_SEP in key:
+        ltc_id, module_id = key.split(STATUS_KEY_SEP, 1)
+        return ltc_id or None, module_id
+    return None, key
+
+
+def can_edit_module_status(open_id: str | None, status_key: str | None) -> bool:
+    if not status_key:
+        return False
     if is_super(open_id) or is_pdt_admin(open_id):
         return True
+    ltc_id_from_key, module_id = parse_status_key(status_key)
     for m in read_modules():
         if m.get("id") != module_id:
             continue
+        scope = m.get("scope")
+        if scope == "ltc_template":
+            # 模板模块:必须有 LTC 上下文;LTC Admin 可改本 LTC 的状态;Owner 跨 LTC 可改
+            if m.get("owner_open_id") == open_id:
+                return True
+            if ltc_id_from_key and is_ltc_admin(open_id, ltc_id_from_key):
+                return True
+            return False
+        # scope=pdt / scope=ltc:沿用原逻辑
         if m.get("owner_open_id") == open_id:
             return True
         ltc_id = m.get("ltc_id")
@@ -607,6 +631,7 @@ async def api_create_ltc(request: Request):
             "name": body["name"],
             "order": body.get("order", len(rows) + 1),
             "archived": False,
+            "milestones": body.get("milestones", []) or [],
             "created_at": now_iso(),
             "updated_at": now_iso(),
             "metadata": body.get("metadata", {}),
@@ -627,7 +652,7 @@ async def api_update_ltc(ltc_id: str, request: Request):
         rows = read_ltcs()
         for r in rows:
             if r["id"] == ltc_id:
-                for k in ("name", "order", "archived", "metadata"):
+                for k in ("name", "order", "archived", "milestones", "metadata"):
                     if k in body:
                         r[k] = body[k]
                 r["updated_at"] = now_iso()
@@ -642,11 +667,18 @@ async def api_delete_ltc(ltc_id: str, request: Request):
     oid = current_open_id(request)
     if not is_pdt_admin(oid):
         raise HTTPException(403, "forbidden")
-    with _FileLock("ltcs", "modules"):
+    with _FileLock("ltcs", "modules", "status"):
         if any(m.get("ltc_id") == ltc_id for m in read_modules()):
             raise HTTPException(422, "ltc has modules; archive instead")
         rows = [r for r in read_ltcs() if r["id"] != ltc_id]
         write_ltcs(rows)
+        # 清理该 LTC 在模板模块下的状态键 <ltc_id>::*
+        status = read_status()
+        removed = [k for k in status if parse_status_key(k)[0] == ltc_id]
+        if removed:
+            for k in removed:
+                status.pop(k)
+            write_status(status)
     await _broadcast("config:reload", {"kind": "ltcs"})
     return {"ok": True}
 
@@ -655,7 +687,8 @@ async def api_delete_ltc(ltc_id: str, request: Request):
 # Modules
 # ---------------------------------------------------------------------------
 
-VALID_SCOPES = {"pdt", "ltc"}
+VALID_SCOPES = {"pdt", "ltc_template", "ltc"}
+STATUS_KEY_SEP = "::"
 VALID_COLORS = {"green", "yellow", "red"}
 VALID_SEVERITIES = {"red", "yellow"}
 VALID_MILESTONE_TYPES = {"TR", "SOP", "Block", "Custom"}
@@ -749,11 +782,14 @@ def _check_create_module_perm(oid: str, body: dict) -> None:
         raise HTTPException(422, "invalid scope")
     if scope == "ltc" and not body.get("ltc_id"):
         raise HTTPException(422, "ltc_id required for scope=ltc")
-    if scope == "pdt":
-        if not is_pdt_admin(oid):
+    if scope in ("pdt", "ltc_template") and body.get("ltc_id"):
+        raise HTTPException(422, f"ltc_id must be null for scope={scope}")
+    if scope == "ltc":
+        if not is_ltc_admin(oid, body["ltc_id"]):
             raise HTTPException(403, "forbidden")
     else:
-        if not is_ltc_admin(oid, body["ltc_id"]):
+        # pdt / ltc_template:PDT 级模块,只有 Super/PDT Admin 可建
+        if not is_pdt_admin(oid):
             raise HTTPException(403, "forbidden")
 
 
@@ -771,7 +807,7 @@ async def api_create_module(request: Request):
         row = {
             "id": body["id"],
             "scope": body["scope"],
-            "ltc_id": body.get("ltc_id") if body["scope"] == "ltc" else None,
+            "ltc_id": body["ltc_id"] if body["scope"] == "ltc" else None,
             "group": body["group"],
             "name": body["name"],
             "order": body.get("order", len(rows) + 1),
@@ -791,6 +827,7 @@ async def api_create_module(request: Request):
 def _check_edit_module_perm(oid: str, module: dict) -> None:
     if is_pdt_admin(oid):
         return
+    # ltc_template 模块属于 PDT 级配置,只有 PDT Admin 可改其定义
     if module.get("scope") == "ltc" and is_ltc_admin(oid, module.get("ltc_id")):
         return
     raise HTTPException(403, "forbidden")
@@ -829,16 +866,17 @@ async def api_delete_module(module_id: str, request: Request):
         _check_edit_module_perm(oid, target)
         new_rows = [r for r in rows if r["id"] != module_id]
         write_modules(new_rows)
-        # 同步删除 status,并写入 module_deleted 历史
+        # 同步删除 status:平铺键 + 所有 <*>::<module_id> 复合键
         status = read_status()
-        before = status.pop(module_id, None)
+        removed_keys = [k for k in status if parse_status_key(k)[1] == module_id]
+        before_map = {k: status.pop(k) for k in removed_keys}
         write_status(status)
         _append_jsonl("module_updates.jsonl", {
             "id": new_id(),
             "ts": now_iso(),
             "module_id": module_id,
             "kind": "module_deleted",
-            "before": before,
+            "before": before_map or None,
             "after": None,
             "updated_by": oid,
             "client": "api",
@@ -890,16 +928,27 @@ def api_get_status():
     return read_status()
 
 
-@app.put("/api/status/{module_id}")
-async def api_put_status(module_id: str, request: Request):
+@app.put("/api/status/{status_key:path}")
+async def api_put_status(status_key: str, request: Request):
     oid = current_open_id(request)
-    if not can_edit_module_status(oid, module_id):
-        raise HTTPException(403, "forbidden")
-    body = await request.json()
+    # path 参数已 URL-decode;复合键形如 "<ltc_id>::<module_id>"
+    ltc_id_from_key, module_id = parse_status_key(status_key)
     modules = read_modules()
     module = next((m for m in modules if m["id"] == module_id), None)
     if not module:
         raise HTTPException(404, "module not found")
+    # 复合键 vs 平铺键必须与 module.scope 匹配
+    if module["scope"] == "ltc_template":
+        if not ltc_id_from_key:
+            raise HTTPException(422, "ltc_template module requires compound key <ltc_id>::<module_id>")
+        if not any(l["id"] == ltc_id_from_key for l in read_ltcs()):
+            raise HTTPException(422, f"ltc_id {ltc_id_from_key} not found")
+    else:
+        if ltc_id_from_key:
+            raise HTTPException(422, f"scope={module['scope']} module must use flat key, not compound")
+    if not can_edit_module_status(oid, status_key):
+        raise HTTPException(403, "forbidden")
+    body = await request.json()
     risk_note_raw = (body.get("risk_note") or "").strip()
     risks_normalized = _normalize_risks(body.get("risks"), fallback_text=risk_note_raw)
     entry = {
@@ -917,20 +966,22 @@ async def api_put_status(module_id: str, request: Request):
     _validate_status_entry(module, entry)
     with _FileLock("status", "updates"):
         status = read_status()
-        before = status.get(module_id)
-        status[module_id] = entry
+        before = status.get(status_key)
+        status[status_key] = entry
         write_status(status)
         _append_jsonl("module_updates.jsonl", {
             "id": new_id(),
             "ts": now_iso(),
+            "status_key": status_key,
             "module_id": module_id,
+            "ltc_id": ltc_id_from_key,
             "kind": "status_update",
             "before": before,
             "after": entry,
             "updated_by": oid,
             "client": "api",
         })
-    await _broadcast("status:reload", {"module_id": module_id})
+    await _broadcast("status:reload", {"status_key": status_key, "module_id": module_id})
     return entry
 
 
@@ -1196,6 +1247,18 @@ def _migrate_data_once() -> None:
                 write_modules(mods)
     except Exception:  # pragma: no cover
         pass
+    try:
+        with _FileLock("ltcs"):
+            ltcs = read_ltcs()
+            dirty = False
+            for l in ltcs:
+                if "milestones" not in l:
+                    l["milestones"] = []
+                    dirty = True
+            if dirty:
+                write_ltcs(ltcs)
+    except Exception:  # pragma: no cover
+        pass
 
 
 @app.on_event("startup")
@@ -1221,72 +1284,6 @@ async def _on_shutdown_scheduler() -> None:
             await _auto_freeze_task
         except (asyncio.CancelledError, Exception):  # pragma: no cover
             pass
-
-
-# ---------------------------------------------------------------------------
-# 示例数据(空实例 onboarding 用)
-# ---------------------------------------------------------------------------
-
-@app.post("/api/seed/demo")
-async def api_seed_demo(request: Request):
-    """Super Admin 一键填示例数据,空实例 onboarding 用。"""
-    oid = current_open_id(request)
-    if not is_super(oid):
-        raise HTTPException(403, "forbidden")
-    with _FileLock("pdt", "ltcs", "modules", "status"):
-        if read_ltcs() or read_modules():
-            raise HTTPException(409, "instance already has data; refuse to overwrite")
-        ltc_id = uuid.uuid4().hex
-        pdt_mod_id = uuid.uuid4().hex
-        ltc_mod1_id = uuid.uuid4().hex
-        ltc_mod2_id = uuid.uuid4().hex
-        sub1 = uuid.uuid4().hex[:12]
-        sub2 = uuid.uuid4().hex[:12]
-        ts = now_iso()
-        write_pdt({
-            "code": "demo",
-            "name": "PMD 示例产品线",
-            "description": "由 /api/seed/demo 自动创建,演示与 onboarding 用",
-            "milestones": [
-                {"name": "技术评审 TR4", "date": "2026-06-15", "type": "TR", "note": ""},
-                {"name": "A 点 SOP", "date": "2026-09-30", "type": "SOP", "note": ""},
-            ],
-            "updated_at": ts,
-            "metadata": {"seeded": True},
-        })
-        write_ltcs([{
-            "id": ltc_id, "name": "示例子项目", "order": 1, "archived": False,
-            "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
-        }])
-        write_modules([
-            {
-                "id": pdt_mod_id, "scope": "pdt", "ltc_id": None,
-                "group": "质量", "name": "质量总览", "order": 1,
-                "owner_open_id": None,
-                "kpi_fields": [{"key": "bug_close_rate", "label": "Bug 闭环率", "hint": ""}],
-                "sub_items": [],
-                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
-            },
-            {
-                "id": ltc_mod1_id, "scope": "ltc", "ltc_id": ltc_id,
-                "group": "硬件和底软", "name": "MCU 底软", "order": 1,
-                "owner_open_id": None, "kpi_fields": [],
-                "sub_items": [
-                    {"id": sub1, "name": "Autosar BSW", "order": 1},
-                    {"id": sub2, "name": "RTE", "order": 2},
-                ],
-                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
-            },
-            {
-                "id": ltc_mod2_id, "scope": "ltc", "ltc_id": ltc_id,
-                "group": "感知算法", "name": "示例感知模块", "order": 1,
-                "owner_open_id": None, "kpi_fields": [], "sub_items": [],
-                "created_at": ts, "updated_at": ts, "metadata": {"seeded": True},
-            },
-        ])
-        write_status({})
-    await _broadcast("config:reload", {"kind": "seed"})
-    return {"ok": True, "ltc_id": ltc_id}
 
 
 # ---------------------------------------------------------------------------

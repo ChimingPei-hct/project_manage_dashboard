@@ -1,9 +1,30 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { Timeline, DataSet } from 'vis-timeline/standalone'
+import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
 
 const props = defineProps({
   milestones: { type: Array, default: () => [] },
 })
+
+const container = ref(null)
+let timeline = null
+let items = null
+let groups = null
+
+/* 已知类型显示规则;未列的类型走默认(灰色圆点) */
+const TYPE_STYLE = {
+  TR:     { shape: '△', color: 'var(--accent)',        label: 'TR',     order: 1 },
+  SOP:    { shape: '◇', color: 'var(--status-red)',    label: 'SOP',    order: 2 },
+  OTA:    { shape: '△', color: '#7c3aed',              label: 'OTA',    order: 3 },
+  review: { shape: '☆', color: '#0891b2',              label: '评审',   order: 4 },
+  goal:   { shape: '★', color: '#d97706',              label: '目标',   order: 5 },
+  Block:  { shape: '■', color: 'var(--status-yellow)', label: 'Block',  order: 6 },
+  other:  { shape: '●', color: 'var(--text-muted)',    label: '其他',   order: 9 },
+}
+function styleOf(t) {
+  return TYPE_STYLE[t] || { shape: '●', color: 'var(--text-muted)', label: t || '其他', order: 8 }
+}
 
 const sorted = computed(() =>
   [...props.milestones]
@@ -11,8 +32,48 @@ const sorted = computed(() =>
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
 )
 
-/* 计算时间轴范围:从最早里程碑到最晚里程碑,跨度至少 4 个月,且包含今天 */
-const range = computed(() => {
+function buildItems() {
+  return sorted.value.map((m, i) => {
+    const type = m.type || 'other'
+    const label = m.label || m.name || ''
+    const date = m.date
+    const safeType = String(type).replace(/[^a-zA-Z0-9_-]/g, '_')
+    return {
+      id: (m.id != null ? m.id : `${label}-${date}-${i}`),
+      group: type,
+      start: date,
+      type: 'box',
+      className: `ms-item ms-${safeType}`,
+      title: `${label} · ${date}${m.note ? ' · ' + m.note : ''}`,
+      _meta: { type, label, date, note: m.note || '' },
+    }
+  })
+}
+
+/* 返回 DOM 元素绕过 vis-timeline 的 XSS 字符串过滤 */
+function itemTemplate(item) {
+  const meta = item._meta
+  if (!meta) return ''
+  const st = styleOf(meta.type)
+  const wrap = document.createElement('div')
+  wrap.className = 'ms-content'
+  const shape = document.createElement('div')
+  shape.className = 'ms-shape'
+  shape.textContent = st.shape
+  shape.style.color = st.color
+  const label = document.createElement('div')
+  label.className = 'ms-label'
+  label.textContent = meta.label
+  label.style.color = st.color
+  const date = document.createElement('div')
+  date.className = 'ms-date'
+  date.textContent = meta.date.slice(5)
+  wrap.append(shape, label, date)
+  return wrap
+}
+
+/* 默认窗口:覆盖所有里程碑 + 跨度 ~8% 的左右留白,左侧留白稍大以容纳贴边 item 的居中文字 */
+function defaultWindow() {
   const today = new Date()
   let earliest = today, latest = today
   for (const m of sorted.value) {
@@ -20,236 +81,168 @@ const range = computed(() => {
     if (d < earliest) earliest = d
     if (d > latest) latest = d
   }
-  // 兜底:前后各扩 15 天
-  const start = new Date(earliest); start.setDate(start.getDate() - 15)
-  const end = new Date(latest); end.setDate(end.getDate() + 15)
-  return { start, end, today, span: Math.max(1, end - start) }
-})
-
-function pct(date) {
-  const d = new Date(date)
-  return Math.max(0, Math.min(100, ((d - range.value.start) / range.value.span) * 100))
+  const span = Math.max(1000 * 60 * 60 * 24 * 90, latest - earliest)
+  const padL = Math.max(span * 0.08, 1000 * 60 * 60 * 24 * 30)
+  const padR = Math.max(span * 0.05, 1000 * 60 * 60 * 24 * 20)
+  return { start: new Date(+earliest - padL), end: new Date(+latest + padR) }
 }
 
-/* 月份刻度 */
-const monthTicks = computed(() => {
-  const out = []
-  const { start, end } = range.value
-  const cur = new Date(start.getFullYear(), start.getMonth(), 1)
-  while (cur <= end) {
-    out.push({
-      label: String(cur.getMonth() + 1).padStart(2, '0'),
-      year: cur.getFullYear(),
-      pct: pct(cur),
-    })
-    cur.setMonth(cur.getMonth() + 1)
+/* 仅显示数据中出现的类型,顺序按 TYPE_STYLE.order */
+function activeGroups() {
+  const used = [...new Set(sorted.value.map(m => m.type || 'other'))]
+  return used
+    .map(t => ({ id: t, content: styleOf(t).label, _order: styleOf(t).order }))
+    .sort((a, b) => a._order - b._order)
+}
+
+function render() {
+  if (!container.value) return
+  if (!sorted.value.length) {
+    if (timeline) { timeline.destroy(); timeline = null }
+    return
   }
-  return out
-})
+  const { start, end } = defaultWindow()
+  const itemList = buildItems()
+  const groupList = activeGroups()
 
-const todayPct = computed(() => pct(new Date()))
-
-function typeLabel(t) {
-  return { SOP: 'SOP', TR: 'TR', Block: 'Block', Custom: '' }[t] || (t || '')
+  if (!timeline) {
+    items = new DataSet(itemList)
+    groups = new DataSet(groupList)
+    timeline = new Timeline(container.value, items, groups, {
+      stack: true,
+      orientation: { axis: 'top', item: 'top' },
+      showCurrentTime: true,
+      showMajorLabels: true,
+      showMinorLabels: true,
+      zoomMin: 1000 * 60 * 60 * 24 * 14,
+      zoomMax: 1000 * 60 * 60 * 24 * 365 * 6,
+      start, end,
+      margin: { item: { vertical: 8, horizontal: 12 }, axis: 14 },
+      moveable: true,
+      selectable: false,
+      template: itemTemplate,
+      locale: 'zh-cn',
+      locales: {
+        'zh-cn': { current: '当前', time: '时间', deleteSelected: '删除' },
+      },
+      format: {
+        minorLabels: {
+          millisecond: 'SSS', second: 's', minute: 'HH:mm', hour: 'HH:mm',
+          weekday: 'ddd D', day: 'D', week: '[W]w', month: 'M月', year: 'YYYY',
+        },
+        majorLabels: {
+          millisecond: 'HH:mm:ss', second: 'D MMMM HH:mm', minute: 'ddd D MMMM',
+          hour: 'ddd D MMMM', weekday: 'MMMM YYYY', day: 'YYYY年M月',
+          week: 'YYYY年M月', month: 'YYYY 年', year: '',
+        },
+      },
+    })
+  } else {
+    items.clear(); items.add(itemList)
+    groups.clear(); groups.add(groupList)
+    timeline.setWindow(start, end, { animation: false })
+  }
 }
 
-function isPast(d) {
-  return new Date(d) < new Date().setHours(0, 0, 0, 0)
-}
-
-/* 交错 4 行排列,缓解相邻里程碑标签重叠 */
-const ROWS = ['r0', 'r1', 'r2', 'r3']
-function rowOf(idx) { return ROWS[idx % ROWS.length] }
-
-/* 按里程碑数自适应内宽:每个里程碑至少 150px */
-const trackMinWidth = computed(() => Math.max(800, sorted.value.length * 150))
+onMounted(render)
+onBeforeUnmount(() => { if (timeline) { timeline.destroy(); timeline = null } })
+watch(() => props.milestones, render, { deep: true })
 </script>
 
 <template>
-  <div class="timeline">
+  <div class="timeline-wrap">
     <div v-if="!sorted.length" class="empty">暂无里程碑 · 可在管理后台添加</div>
-    <div v-else class="track-scroll">
-     <div class="track" :style="{ minWidth: trackMinWidth + 'px' }">
-      <div class="months">
-        <div
-          v-for="t in monthTicks"
-          :key="t.year + '-' + t.label"
-          class="month-tick"
-          :style="{ left: t.pct + '%' }"
-        >
-          <span class="m-label">{{ t.label }}</span>
-        </div>
-      </div>
-      <div class="axis"></div>
-      <div
-        class="today-line"
-        :style="{ left: todayPct + '%' }"
-        v-tooltip="'今天'"
-      >
-        <span class="today-label">今天</span>
-      </div>
-      <div class="markers">
-        <div
-          v-for="(m, i) in sorted"
-          :key="(m.name || m.label) + m.date"
-          class="marker"
-          :class="[rowOf(i), { past: isPast(m.date) }]"
-          :style="{ left: pct(m.date) + '%' }"
-          v-tooltip="`${m.label || m.name} · ${m.date}${m.note ? ' · ' + m.note : ''}`"
-        >
-          <span class="badge" :class="`type-${m.type || 'TR'}`">
-            {{ typeLabel(m.type) }}
-          </span>
-          <span class="m-name">{{ m.label || m.name }}</span>
-          <span class="m-date">{{ m.date.slice(5) }}</span>
-        </div>
-      </div>
-     </div>
-    </div>
+    <div v-show="sorted.length" ref="container" class="vis-host"></div>
   </div>
 </template>
 
 <style scoped>
-.timeline {
+.timeline-wrap {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 24px 18px;
+  padding: 8px 12px 12px;
   margin: 0 24px 16px;
 }
 .empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; text-align: center; }
-.track-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 4px;
+.vis-host { width: 100%; min-height: 160px; }
+</style>
+
+<style>
+/* vis-timeline 全局样式覆写(scoped 选择不到 vis 注入的 DOM) */
+.vis-timeline {
+  border: none !important;
+  font-family: inherit !important;
 }
-.track {
-  position: relative;
-  height: 170px;
+.vis-panel.vis-center,
+.vis-panel.vis-left,
+.vis-panel.vis-right,
+.vis-panel.vis-top,
+.vis-panel.vis-bottom {
+  border-color: var(--border-subtle) !important;
 }
-.months {
-  position: absolute;
-  inset: 0;
-}
-.month-tick {
-  position: absolute;
-  top: 80px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: var(--text-dim);
-}
-.m-label {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--panel-soft);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
-  padding: 1px 6px;
+.vis-time-axis .vis-grid.vis-minor { border-color: var(--border-subtle) !important; }
+.vis-time-axis .vis-grid.vis-major { border-color: var(--border) !important; }
+.vis-time-axis .vis-text {
+  color: var(--text-dim) !important;
   font-variant-numeric: tabular-nums;
 }
-.axis {
-  position: absolute;
-  top: 84px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(to right, var(--border), var(--accent-soft) 50%, var(--border));
-  border-radius: var(--radius);
-}
-.today-line {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: 1px;
-  background: linear-gradient(to bottom, transparent, var(--accent) 30%, var(--accent) 70%, transparent);
-  z-index: 1;
-}
-.today-line .today-label {
-  position: absolute;
-  top: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
-  background: var(--accent);
-  color: #fff;
-  padding: 1px 6px;
-  border-radius: var(--radius);
-  white-space: nowrap;
-  font-weight: 600;
-}
-.markers { position: absolute; inset: 0; }
-.marker {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transform: translateX(-50%);
-  z-index: 2;
-}
-.marker.r0 { top: 2px; }
-.marker.r1 { top: 38px; }
-.marker.r2 { top: 96px; }
-.marker.r3 { top: 132px; }
-.marker.r0 .badge, .marker.r1 .badge { margin-bottom: 3px; }
-.marker.r2 .badge, .marker.r3 .badge { order: 3; margin-top: 3px; }
-.marker.r2 .m-name, .marker.r3 .m-name { order: 1; }
-.marker.r2 .m-date, .marker.r3 .m-date { order: 2; }
-/* 连接线:把上下排的 marker 用细线连到轴 */
-.marker.r0::after, .marker.r1::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  width: 1px;
-  background: var(--border);
-}
-.marker.r0::after { height: 50px; }
-.marker.r1::after { height: 14px; }
-.marker.r2::after, .marker.r3::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  width: 1px;
-  background: var(--border);
-}
-.marker.r2::after { height: 14px; }
-.marker.r3::after { height: 50px; }
-.marker .badge {
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: var(--radius);
-  color: #fff;
+.vis-time-axis .vis-text.vis-major {
   font-weight: 700;
-  letter-spacing: 0.3px;
-  min-width: 22px;
-  text-align: center;
+  color: var(--text) !important;
 }
-.marker .badge.type-TR { background: var(--accent); }
-.marker .badge.type-SOP { background: var(--status-red); }
-.marker .badge.type-Block { background: var(--status-yellow); }
-.marker .badge.type-Custom { background: var(--text-muted); }
-.m-name {
-  font-size: 10.5px;
+
+/* 左侧 group 标签栏 */
+.vis-labelset .vis-label {
+  color: var(--text-dim);
+  font-size: 12px;
   font-weight: 600;
+  border-color: var(--border-subtle) !important;
+}
+
+/* 里程碑 item:取消默认背景框,用形状 + 文字呈现 */
+.vis-item.ms-item {
+  background: transparent !important;
+  border: none !important;
   color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius);
-  padding: 1px 6px;
+}
+.vis-item.ms-item .vis-item-content {
+  padding: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+.vis-item.ms-item .ms-shape {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.vis-item.ms-item .ms-label {
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
-  max-width: 130px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.m-date {
+.vis-item.ms-item .ms-date {
   font-size: 10px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-  margin-top: 2px;
+  margin-top: 1px;
 }
-.marker.past { opacity: 0.55; }
-.marker.past .badge { filter: grayscale(0.3); }
+/* 形状颜色按类型 */
+.vis-item.ms-TR .ms-shape { color: var(--accent); }
+.vis-item.ms-TR .ms-label { color: var(--accent); }
+.vis-item.ms-SOP .ms-shape { color: var(--status-red); }
+.vis-item.ms-SOP .ms-label { color: var(--status-red); }
+.vis-item.ms-Block .ms-shape { color: var(--status-yellow); }
+.vis-item.ms-Block .ms-label { color: var(--status-yellow); }
+.vis-item.ms-Custom .ms-shape { color: var(--text-muted); }
+
+/* 今天竖线 */
+.vis-current-time {
+  background-color: var(--accent) !important;
+  width: 2px !important;
+}
 </style>

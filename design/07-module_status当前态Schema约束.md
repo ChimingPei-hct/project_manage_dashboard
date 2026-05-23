@@ -20,14 +20,30 @@
 ## 3. 文件格式
 
 - 路径:`DATA_DIR/module_status.json`
-- 顶层类型:**对象**,键为 `module.id`
+- 顶层类型:**对象**,键为 **status key**(定义见 §5.1)
 - main 分支模板:`{}`
 
 ## 4. 完整字段定义
 
 ```jsonc
 {
-  "ltc-as33-mcu-bsw": {
+  // scope=pdt:key = module.id
+  "pdt-quality": {
+    "module_color": "green",
+    "updated_by": "ou_xxxxxx",
+    "updated_at": "2026-05-22T15:30:00+08:00",
+    "metadata": {}
+  },
+  // scope=ltc:key = module.id
+  "ltc-as33-bench": {
+    "module_color": "yellow",
+    "risk_note": "测试台架交付延期",
+    "updated_by": "ou_xxxxxx",
+    "updated_at": "2026-05-22T15:30:00+08:00",
+    "metadata": {}
+  },
+  // scope=ltc_template:key = "<ltc_id>::<module.id>",每个 LTC 独立填报
+  "as33::ltc-tpl-mcu-bsw": {
     "module_color": "yellow",                // 必填,枚举
     "sub_items_color": {                     // 可空对象;键须存在于 modules[id].sub_items[].id
       "autosar-bsw": "green",
@@ -46,10 +62,20 @@
 
 ## 5. 字段规则
 
-### 5.1 键(`module.id`)
+### 5.1 status key
 
-- 必须存在于 `modules.json` 的 `id` 集合
-- `modules.json` 删除某模块时,本对象对应键同步删除
+按模块 `scope` 区分:
+
+| 模块 scope | key 格式 | 示例 |
+|-----------|---------|------|
+| `pdt` | `module.id` | `pdt-quality` |
+| `ltc` | `module.id` | `ltc-as33-bench` |
+| `ltc_template` | `<ltc_id>::<module.id>`(分隔符固定为双冒号) | `as33::ltc-tpl-mcu-bsw` |
+
+- 复合 key 中 `ltc_id` 必须存在于 `ltcs.json`,`module.id` 必须对应 `scope=ltc_template` 的模块
+- 平铺 key 必须存在于 `modules.json`,且对应模块的 scope 不能是 `ltc_template`(否则视为非法 key)
+- 删除模块 / 删除 LTC 时,本对象中所有命中的 key 同步删除(模板模块被删 → 所有 `<*>::<module_id>` 键清理;LTC 被删 → 所有 `<该 ltc_id>::<*>` 与 `ltc_id == 该 LTC` 的平铺键清理)
+- API 路径中 key 须 URL-encode(`::` → `%3A%3A`),后端按 URL-decode 后解析
 
 ### 5.2 `module_color`
 
@@ -91,14 +117,16 @@
 
 ## 6. 一致性不变量
 
-- `module_status.json` 中键的集合 ⊆ `modules.json` 中 id 的集合
-- `sub_items_color` 的键 ⊆ 对应 `modules[id].sub_items[].id` 集合
-- `kpi_values` 的键 ⊆ 对应 `modules[id].kpi_fields[].key` 集合
+- `module_status.json` 每个 key 都能按 §5.1 解析出唯一 `(ltc_id?, module_id)` 二元组,且引用都成立
+- `sub_items_color` 的键 ⊆ 对应模块 `sub_items[].id` 集合(模板模块取定义本身)
+- `kpi_values` 的键 ⊆ 对应模块 `kpi_fields[].key` 集合
 - 任意 entry 的存在都对应至少一行 `module_updates.jsonl` 历史记录(后端写入保证)
 
 ## 7. 执行约束
 
-### 7.1 写当前态(`PUT /api/status/{module_id}`)
+### 7.1 写当前态(`PUT /api/status/{status_key}`)
+
+`{status_key}` 即 §5.1 定义的 key(URL-encoded)。
 
 后端必须**事务式**:
 

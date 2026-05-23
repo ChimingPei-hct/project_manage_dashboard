@@ -16,6 +16,8 @@ export function useEditableModules() {
   const { modules, isReadonly } = useDashboard()
   const { admins } = useAdmins()
 
+  // editableSet 只对应 scope=pdt / scope=ltc 的平铺权限(沿用旧语义);
+  // 模板模块的权限依赖 LTC 上下文,通过 canEdit(moduleId, ltcId) 显式查
   const editableSet = computed(() => {
     const set = new Set()
     if (isReadonly.value) return set
@@ -23,7 +25,9 @@ export function useEditableModules() {
     if (!u?.open_id) return set
     const all = modules.value || []
     if (u.is_super || u.is_pdt_admin) {
-      for (const m of all) set.add(m.id)
+      for (const m of all) {
+        if (m.scope !== 'ltc_template') set.add(m.id)
+      }
       return set
     }
     const ltcMap = admins.value?.ltc || {}
@@ -33,13 +37,26 @@ export function useEditableModules() {
         .map(([k]) => k)
     )
     for (const m of all) {
+      if (m.scope === 'ltc_template') continue
       if (m.owner_open_id === u.open_id) { set.add(m.id); continue }
       if (m.scope === 'ltc' && m.ltc_id && myLtcs.has(m.ltc_id)) set.add(m.id)
     }
     return set
   })
 
-  function canEdit(moduleId) {
+  function canEdit(moduleId, ltcId = '') {
+    if (isReadonly.value) return false
+    const u = me.value
+    if (!u?.open_id) return false
+    if (u.is_super || u.is_pdt_admin) return true
+    const mod = (modules.value || []).find(m => m.id === moduleId)
+    if (!mod) return false
+    if (mod.owner_open_id === u.open_id) return true
+    if (mod.scope === 'ltc_template') {
+      if (!ltcId) return false
+      const ltcMap = admins.value?.ltc || {}
+      return (ltcMap[ltcId] || []).includes(u.open_id)
+    }
     return editableSet.value.has(moduleId)
   }
 

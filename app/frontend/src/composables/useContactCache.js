@@ -3,7 +3,7 @@
  * PMD 后端端点为 /api/users/search,数据源为 user_registry.json(v1)。
  * localStorage 24h 二级缓存,失效后台静默刷新。
  */
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const _contacts = ref([])
 const _loaded = ref(false)
@@ -49,6 +49,19 @@ async function _fetch() {
   }
 }
 
+const _nameByOpenId = computed(() => {
+  const map = {}
+  for (const u of _contacts.value || []) {
+    if (u?.open_id) map[u.open_id] = u.name || ''
+  }
+  return map
+})
+
+export function displayName(openId) {
+  if (!openId) return ''
+  return _nameByOpenId.value[openId] || openId
+}
+
 export function useContactCache() {
   function ensureContacts() {
     if (_loaded.value && Date.now() - _lastFetchedAt.value < TTL_MS) return Promise.resolve()
@@ -64,5 +77,5 @@ export function useContactCache() {
     _inflight = _fetch()
     return _inflight
   }
-  return { contacts: _contacts, loading: _loading, loaded: _loaded, ensureContacts, refreshContacts }
+  return { contacts: _contacts, loading: _loading, loaded: _loaded, ensureContacts, refreshContacts, displayName }
 }

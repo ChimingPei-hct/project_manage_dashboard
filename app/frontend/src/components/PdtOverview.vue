@@ -1,15 +1,19 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
 import { useEditableModules } from '../composables/useEditableModules.js'
+import { useContactCache, displayName } from '../composables/useContactCache.js'
 import { kpiItemsOf, risksOf, currentWeekRange } from '../composables/useStatusHelpers.js'
 import TimelineBar from './TimelineBar.vue'
 import StatusLegend from './StatusLegend.vue'
 import ModuleStatusDots from './ModuleStatusDots.vue'
 import StatusEditDialog from './StatusEditDialog.vue'
+import OwnerChip from './OwnerChip.vue'
 
 const { pdt, status, modulesByScope } = useDashboard()
 const { canEdit } = useEditableModules()
+const { ensureContacts } = useContactCache()
+onMounted(() => { ensureContacts() })
 
 /* 优先用配置的 overview_cards;无则回退到 modulesByScope.pdt(老 schema 自动适配) */
 const cards = computed(() => {
@@ -113,7 +117,7 @@ const dateRange = computed(() => currentWeekRange())
         </div>
 
         <footer class="card-foot">
-          <span class="owner">Owner: {{ card.owner_open_id || '未指派' }}</span>
+          <OwnerChip :open-id="card.owner_open_id" prefix="Owner: " fallback="未指派" />
           <button
             v-if="canEdit(card.module.id)"
             class="edit-btn"
