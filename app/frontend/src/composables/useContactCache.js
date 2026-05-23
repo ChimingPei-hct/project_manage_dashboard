@@ -10,7 +10,7 @@ const _loaded = ref(false)
 const _loading = ref(false)
 const _lastFetchedAt = ref(0)
 const TTL_MS = 24 * 60 * 60 * 1000
-const LS_KEY = 'pmd_contact_cache_v1'
+const LS_KEY = 'pmd_contact_cache_v2'  // v2: 含飞书头像 avatar_url
 
 let _inflight = null
 
