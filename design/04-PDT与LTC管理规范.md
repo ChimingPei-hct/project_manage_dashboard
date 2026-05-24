@@ -32,6 +32,7 @@
   "code": "Luna6",                 // 稳定标识,初始化后不变;UI 中不单独编辑
   "name": "Luna6",                 // 显示名;UI 唯一可编辑入口,保存时同步写入 code
   "description": "...",
+  "icon": "assets/luna-6/icon.svg",// 可选;相对 DATA_DIR 的图标路径,前端走 /assets/<path> 静态服务取得
   "milestones": [
     { "name": "TR4-2", "date": "2026-05-12", "type": "TR", "note": "..." },
     { "name": "A 点 SOP", "date": "2026-07-15", "type": "SOP", "note": "" }
@@ -69,6 +70,15 @@
 - 命名规则:小写字母 + 数字 + 短横线,长度 2–32(正则 `^[a-z][a-z0-9-]{1,31}$`)
 - 不允许重复
 - 所有下游引用(modules、status 等)用此标识,不用 name
+
+### 4.1.x PDT 图标(`icon`)
+
+- 单实例级元数据,**不与代码耦合**;每个 PDT 实例上传自己的图标,顶栏 brand / 浏览器 favicon / `document.title` 一并生效
+- 存储:`design/assets/<pdt-code>/icon.svg`(或 `.png`),`pdt.json` 存相对路径 `"assets/<pdt-code>/icon.svg"`
+- 文件类型白名单:`.svg` / `.png`(其余拒收);单文件 ≤ 256KB
+- 编辑入口:顶栏齿轮 `PdtConfigDrawer` Tab「PDT 信息」(详见 `13 §6.0`);Super / PDT Admin / LTC Admin 可上传与清除
+- 缺省(`icon` 字段空或文件不存在)时:顶栏回退 `📊` emoji、favicon 走浏览器默认、`document.title` 仍同步 `pdt.name`
+- 前端不允许在代码中硬编码具体实例图标;新增 PDT 实例直接通过 UI 上传
 
 ### 4.2 显示名(`name`)
 
@@ -127,6 +137,18 @@
 
 - 增删/调整里程碑视为 PDT 更新,刷新 `pdt.updated_at`
 - 里程碑变更**不冻结**已有快照(快照只看状态,不看里程碑)
+
+### 5.5 LTC 配置初始化(从模板拷贝)
+
+- **模板池编辑入口**:顶栏齿轮 → `PdtConfigDrawer` → Tab「LTC 模板」(`LtcTemplateEditor`)。单一模板池(全 PDT 共享一套),字段仅 name / order / group;`sub_items` / `kpi_fields` / `owner_open_id` 不在模板里维护(详见 `13 §6.0`)
+- LTC 创建后,可通过 `POST /api/ltc/{ltc_id}/init-from-template`(权限:Super / PDT Admin / 该 LTC Admin)将「模板池」(`categories.json` / `modules.json` 中 `scope=ltc_template` 的全量记录)**深拷贝**为本 LTC 的 `scope=ltc` 副本
+- 拷贝语义:
+  - **快照式**:模板与副本完全解耦,模板后续修改**不下推**已初始化的 LTC;副本删改也不影响模板
+  - **不存反向指针**:副本不写 `template_id`,避免造成"应同步"的错觉
+  - **新 ID**:`<原模板 id>--<ltc_id>`,所有 module 的 `category_id` 同步重写到新 category id
+  - **重置元数据**:`created_at` / `updated_at` 取当前时间,`owner_open_id` 沿用模板(模板本身应不带 Owner)
+- 前置检查:本 LTC 已存在任意 `scope=ltc` category 或 module → 409(不做合并/增量同步);如需重置,先手动清空再调用
+- 不在范围:模板版本号 / 副本与模板的 diff 视图 / LTC 重置端点 → 后续按需扩展
 
 ## 6. 禁止项
 

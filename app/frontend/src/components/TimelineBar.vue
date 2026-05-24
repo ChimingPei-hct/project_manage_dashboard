@@ -4,6 +4,7 @@ import { Timeline, DataSet } from 'vis-timeline/standalone'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
 import moment from 'moment/min/moment-with-locales'
 moment.locale('zh-cn')
+import { TYPE_STYLE, styleOf } from '../constants/milestoneTypes.js'
 
 const props = defineProps({
   milestones: { type: Array, default: () => [] },
@@ -13,20 +14,6 @@ const container = ref(null)
 let timeline = null
 let items = null
 let groups = null
-
-/* 已知类型显示规则;未列的类型走默认(灰色圆点) */
-const TYPE_STYLE = {
-  TR:     { shape: '△', color: 'var(--accent)',        label: 'TR',     order: 1 },
-  SOP:    { shape: '◇', color: 'var(--status-red)',    label: 'SOP',    order: 2 },
-  OTA:    { shape: '△', color: '#7c3aed',              label: 'OTA',    order: 3 },
-  review: { shape: '☆', color: '#0891b2',              label: '评审',   order: 4 },
-  goal:   { shape: '★', color: '#d97706',              label: '目标',   order: 5 },
-  Block:  { shape: '■', color: 'var(--status-yellow)', label: 'Block',  order: 6 },
-  other:  { shape: '●', color: 'var(--text-muted)',    label: '其他',   order: 9 },
-}
-function styleOf(t) {
-  return TYPE_STYLE[t] || { shape: '●', color: 'var(--text-muted)', label: t || '其他', order: 8 }
-}
 
 const sorted = computed(() =>
   [...props.milestones]
@@ -154,7 +141,7 @@ watch(() => props.milestones, render, { deep: true })
 
 <template>
   <div class="timeline-wrap">
-    <div v-if="!sorted.length" class="empty">暂无里程碑 · 可在管理后台添加</div>
+    <div v-if="!sorted.length" class="empty">暂无时间线节点 · 可在管理后台添加</div>
     <div v-show="sorted.length" ref="container" class="vis-host"></div>
   </div>
 </template>

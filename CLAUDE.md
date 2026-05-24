@@ -112,14 +112,19 @@ bash scripts/role-test.sh
 python3 design/validate_data_files.py
 ```
 
-## 看板卡片 / 风险卡片共享约束(harness 红线)
+## 看板卡片解耦约束(harness 红线)
 
-PDT 总览看板、LTC 看板的**模块卡片**与**风险任务卡片**必须使用同一套代码,**一处维护、两处受用**。
+PDT 总览与 LTC 看板形态不同,**互相解耦**,各自一套实现:
 
-- 模块卡片唯一实现:`app/frontend/src/components/ModuleCardGrid.vue`
-- 风险任务卡片唯一实现:`app/frontend/src/components/ModuleRiskList.vue`
-- 差异(scope/徽标/权限/创建预设/上下文 ltcId 等)只能通过 props 表达,不允许在外层页面(`PdtOverview.vue`、`LtcMain.vue` 等)内嵌写卡片 HTML/CSS
-- 新增看板类型(如未来 PMO 总览)也必须 import 上述组件,**不允许新建第三套**卡片渲染
+- **PDT 卡片(scope=pdt 模块的看板/风险展示)**
+  - 唯一实现:`app/frontend/src/components/ModuleCardGrid.vue`(卡片网格) + `ModuleRiskList.vue`(风险列表)
+  - 仅在 `PdtOverview.vue` 中 import;PDT 总览页内卡片与风险共用同一组件
+- **LTC 卡片(三级结构 Category → Module → Sub-item)**
+  - 唯一实现:`app/frontend/src/components/ltc/LtcCategoryGrid.vue` + `LtcModuleCard.vue` + `LtcRiskCard.vue` + `SubItemEditDialog.vue`
+  - 仅在 `LtcMain.vue` 中 import;LTC 内"看板"与"风险"由同一组件按 `mode='board'|'risk'|'both'` 切换渲染
+- **严禁跨用**:LTC 页不得 import `ModuleCardGrid.vue`,PDT 页不得 import `LtcCategoryGrid.vue` 或 `LtcModuleCard.vue`
+- 同一面板内(PDT 自身或 LTC 自身)看板与风险仍**共享单一组件**,差异通过 props/mode 表达;**不允许在外层页面内嵌写卡片 HTML/CSS**
+- 新增看板类型(如未来 PMO 总览)必须明确选择复用现有组件或新建独立组件;**不允许新增第三套与 PDT/LTC 重复的实现**
 - 违反 → PR 拒收
 
 ## UI 规范要点(详见 `design/12-前端实现约束.md`)

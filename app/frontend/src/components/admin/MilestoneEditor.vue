@@ -1,12 +1,8 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi } from '../../composables/useAdminApi.js'
-import TimelineBar from '../TimelineBar.vue'
-
-const props = defineProps({
-  showPreview: { type: Boolean, default: true },
-})
+import { TYPE_OPTIONS, styleOf } from '../../constants/milestoneTypes.js'
 
 const { pdt, refresh } = useDashboard()
 const draft = ref([])
@@ -25,7 +21,7 @@ watch(pdt, (v) => {
 }, { immediate: true })
 
 function add() {
-  draft.value.push({ label: '新里程碑', date: new Date().toISOString().slice(0, 10), type: 'TR', note: '' })
+  draft.value.push({ label: '新节点', date: new Date().toISOString().slice(0, 10), type: 'TR', note: '' })
   dirty.value = true
 }
 function remove(i) { draft.value.splice(i, 1); dirty.value = true }
@@ -35,8 +31,6 @@ function move(i, dir) {
   ;[draft.value[i], draft.value[j]] = [draft.value[j], draft.value[i]]
   dirty.value = true
 }
-
-const previewMilestones = computed(() => draft.value.filter(m => m.date))
 
 async function save() {
   saving.value = true
@@ -57,7 +51,7 @@ async function save() {
 <template>
   <div class="milestone-editor">
     <div class="ops">
-      <button v-tooltip="'添加一个里程碑'" @click="add">+ 新增</button>
+      <button v-tooltip="'添加一个时间线节点'" @click="add">+ 新增</button>
       <button class="primary" :disabled="!dirty || saving" v-tooltip="dirty ? '保存修改' : '无变更'" @click="save">
         {{ saving ? '保存中…' : '保存' }}
       </button>
@@ -65,13 +59,8 @@ async function save() {
 
     <p v-if="errMsg" class="err-banner">{{ errMsg }}</p>
 
-    <section v-if="showPreview" class="block">
-      <h3>预览</h3>
-      <TimelineBar :milestones="previewMilestones" />
-    </section>
-
     <section class="block">
-      <div v-if="!draft.length" class="hint">还没有里程碑 · 点上方「+ 新增」开始</div>
+      <div v-if="!draft.length" class="hint">还没有时间线节点 · 点上方「+ 新增」开始</div>
       <div v-else class="ms-table">
         <div class="ms-row head">
           <span>名称</span><span>日期</span><span>类型</span><span>备注</span><span>操作</span>
@@ -79,12 +68,16 @@ async function save() {
         <div v-for="(m, i) in draft" :key="i" class="ms-row">
           <input v-model="m.label" @input="dirty = true" placeholder="如:TR4-2" />
           <input type="date" v-model="m.date" @input="dirty = true" />
-          <select v-model="m.type" @change="dirty = true" v-tooltip="'里程碑类型,决定时间轴上的色块'">
-            <option value="TR">TR · 技术评审</option>
-            <option value="SOP">SOP · 量产</option>
-            <option value="Block">Block · 阻塞</option>
-            <option value="Custom">Custom · 其他</option>
-          </select>
+          <div class="type-cell">
+            <select v-model="m.type" @change="dirty = true" v-tooltip="'时间线节点类型,决定时间线上的形状与颜色'">
+              <option v-for="opt in TYPE_OPTIONS" :key="opt.key" :value="opt.key">
+                {{ opt.shape }} {{ opt.key }} · {{ opt.label }}
+              </option>
+            </select>
+            <span class="type-glyph" :style="{ color: styleOf(m.type).color }" v-tooltip="styleOf(m.type).label">
+              {{ styleOf(m.type).shape }}
+            </span>
+          </div>
           <input v-model="m.note" @input="dirty = true" placeholder="备注(可选)" />
           <div class="row-ops">
             <button v-tooltip="'上移'" :disabled="i === 0" @click="move(i, -1)">↑</button>
@@ -103,9 +96,12 @@ async function save() {
 .block h3 { font-size: 13px; margin: 0 0 8px; font-weight: 700; }
 
 .ms-table { display: flex; flex-direction: column; gap: 4px; }
-.ms-row { display: grid; grid-template-columns: 1.4fr 130px 1fr 1.4fr 110px; gap: 6px; align-items: center; }
+.ms-row { display: grid; grid-template-columns: 1.4fr 130px 1.4fr 1.4fr 110px; gap: 6px; align-items: center; }
 .ms-row.head { font-size: 11px; color: var(--text-dim); padding: 0 4px; }
 .ms-row input, .ms-row select { font-size: 12.5px; }
+.type-cell { display: flex; align-items: center; gap: 6px; }
+.type-cell select { flex: 1; min-width: 0; }
+.type-glyph { font-size: 15px; line-height: 1; width: 18px; text-align: center; flex-shrink: 0; }
 .row-ops { display: flex; gap: 2px; justify-content: flex-end; }
 .row-ops button { font-size: 11px; padding: 2px 6px; }
 .danger { background: var(--status-red); color: #fff; border-color: var(--status-red); }

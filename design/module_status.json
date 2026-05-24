@@ -33,49 +33,52 @@
       {
         "goal": "cpu_util",
         "actual": "78",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "fps_perception",
         "actual": "27.5",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "delay_e2e",
         "actual": "138",
-        "color": ""
+        "color": "green"
       }
     ],
     "sub_items_risk": {}
   },
   "pdt-devenv": {
     "module_color": "green",
-    "updated_by": "ou_c7bf1dca0d400e9fe9b2539a20cbf400",
-    "updated_at": "2026-05-23T20:00:00+08:00",
-    "metadata": {},
     "sub_items_color": {
       "ota-build": "green",
       "hil-test": "green",
       "code-gate": "yellow"
     },
-    "kpi_values": {
-      "build_pass": "99.2",
-      "ci_duration": "21"
-    },
+    "kpi_values": {},
     "kpi_items": [
       {
         "goal": "build_pass",
         "actual": "99.2",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "ci_duration",
         "actual": "21",
-        "color": ""
+        "color": "yellow"
       }
     ],
-    "risks": [],
-    "sub_items_risk": {}
+    "risks": [
+      {
+        "severity": "red",
+        "text": "111111"
+      }
+    ],
+    "risk_note": "111111",
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-24T17:07:59.600532+08:00",
+    "metadata": {}
   },
   "pdt-ut": {
     "module_color": "red",
@@ -111,17 +114,17 @@
       {
         "goal": "coverage",
         "actual": "54",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "ut_pass",
         "actual": "92.8",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "failing",
         "actual": "37",
-        "color": ""
+        "color": "green"
       }
     ],
     "sub_items_risk": {}
@@ -160,12 +163,12 @@
       {
         "goal": "migrated_pkgs",
         "actual": "28",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "blockers",
         "actual": "3",
-        "color": ""
+        "color": "green"
       }
     ],
     "sub_items_risk": {}
@@ -183,12 +186,12 @@
       {
         "goal": "infer_latency",
         "actual": "32",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "throughput",
         "actual": "135",
-        "color": ""
+        "color": "red"
       }
     ],
     "risks": [],
@@ -210,12 +213,12 @@
       {
         "goal": "obj_recall",
         "actual": "96.4",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "lane_acc",
         "actual": "97.1",
-        "color": ""
+        "color": "green"
       }
     ],
     "risks": [],
@@ -254,12 +257,12 @@
       {
         "goal": "integration_pass",
         "actual": "73",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "open_bugs",
         "actual": "26",
-        "color": ""
+        "color": "yellow"
       }
     ],
     "sub_items_risk": {}
@@ -288,12 +291,12 @@
       {
         "goal": "daily_upload_gb",
         "actual": "612",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "loss_rate",
         "actual": "1.8",
-        "color": ""
+        "color": "green"
       }
     ],
     "sub_items_risk": {}
@@ -311,12 +314,12 @@
       {
         "goal": "auto_rate",
         "actual": "82",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "manual_saved",
         "actual": "46",
-        "color": ""
+        "color": "green"
       }
     ],
     "risks": [],
@@ -335,12 +338,12 @@
       {
         "goal": "mileage",
         "actual": "3260",
-        "color": ""
+        "color": "green"
       },
       {
         "goal": "scene_cov",
         "actual": "88",
-        "color": ""
+        "color": "red"
       }
     ],
     "risks": [],
@@ -367,12 +370,12 @@
       {
         "goal": "calib_pass",
         "actual": "99.1",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "vehicles",
         "actual": "47",
-        "color": ""
+        "color": "green"
       }
     ],
     "risks": [],
@@ -395,12 +398,12 @@
       {
         "goal": "scene_total",
         "actual": "5240",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "weekly_runs",
         "actual": "238",
-        "color": ""
+        "color": "green"
       }
     ],
     "risks": [],
@@ -420,17 +423,17 @@
       {
         "goal": "hr_fill",
         "actual": "72.6",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "budget_use",
         "actual": "27",
-        "color": ""
+        "color": "red"
       },
       {
         "goal": "chip_ship",
         "actual": "5.14",
-        "color": ""
+        "color": "red"
       }
     ],
     "risks": [],

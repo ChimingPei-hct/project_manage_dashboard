@@ -7,7 +7,9 @@ import { useAdmins } from './composables/useAdmins.js'
 import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogin.js'
 import PdtOverview from './components/PdtOverview.vue'
 import LtcMain from './components/LtcMain.vue'
-import PdtNameDialog from './components/PdtNameDialog.vue'
+import PdtConfigDrawer from './components/PdtConfigDrawer.vue'
+import MilestonesDrawer from './components/admin/MilestonesDrawer.vue'
+import { setFavicon, iconUrlOf } from './utils/favicon.js'
 
 const { me, refresh: refreshAuth } = useAuth()
 const { pdt, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
@@ -33,12 +35,20 @@ const viewComp = computed(() => {
   switch (current.value.view) {
     case 'ltc': return LtcMain
     case 'risks': return LtcMain  // 同一组件,内部按 current.view 决定是否滚到风险锚点
+    case 'milestones': return MilestonesDrawer
     case 'pdt':
     default: return PdtOverview
   }
 })
 
-const pdtNameOpen = ref(false)
+const pdtConfigOpen = ref(false)
+
+const pdtIconUrl = computed(() => iconUrlOf(pdt.value))
+
+watch([pdtIconUrl, () => pdt.value?.name], ([url, name]) => {
+  setFavicon(url)
+  document.title = name ? `${name} · PMD 项目看板` : 'PMD · 产品线项目看板'
+}, { immediate: true })
 
 const navItems = computed(() => [
   { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
@@ -96,7 +106,11 @@ onMounted(async () => {
   </div>
   <div v-else class="layout">
     <header class="topbar">
-      <div class="brand" v-tooltip="(pdt?.name ? pdt.name + ' · ' : '') + '产品线项目看板'"><span class="brand-emoji">📊</span><span class="brand-text">{{ pdt?.name || 'PMD' }}</span></div>
+      <div class="brand" v-tooltip="(pdt?.name ? pdt.name + ' · ' : '') + '产品线项目看板'">
+        <img v-if="pdtIconUrl" :src="pdtIconUrl" class="brand-logo" alt="" />
+        <span v-else class="brand-emoji">📊</span>
+        <span class="brand-text">{{ pdt?.name || 'PMD' }}</span>
+      </div>
       <nav>
         <button
           v-for="n in navItems"
@@ -115,10 +129,10 @@ onMounted(async () => {
         <button
           v-if="isAdminish"
           class="icon-btn"
-          :class="{ active: pdtNameOpen }"
-          v-tooltip="'编辑 PDT 名称(左上角品牌)'"
-          @click="pdtNameOpen = true"
-          aria-label="编辑 PDT 名称"
+          :class="{ active: pdtConfigOpen }"
+          v-tooltip="'PDT 配置:名称/图标 + LTC 模板池'"
+          @click="pdtConfigOpen = true"
+          aria-label="PDT 配置"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
@@ -130,7 +144,7 @@ onMounted(async () => {
     <main>
       <component :is="viewComp" />
     </main>
-    <PdtNameDialog :open="pdtNameOpen" @close="pdtNameOpen = false" />
+    <PdtConfigDrawer :open="pdtConfigOpen" @close="pdtConfigOpen = false" />
   </div>
 </template>
 
@@ -147,8 +161,9 @@ onMounted(async () => {
   z-index: 50;
   backdrop-filter: blur(8px);
 }
-.brand { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 16px; letter-spacing: -0.2px; }
+.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; letter-spacing: -0.2px; }
 .brand-emoji { font-size: 16px; }
+.brand-logo { width: 24px; height: 24px; border-radius: 6px; display: block; object-fit: contain; }
 .brand-text {
   background: linear-gradient(135deg, var(--accent), #0ea5e9);
   -webkit-background-clip: text;

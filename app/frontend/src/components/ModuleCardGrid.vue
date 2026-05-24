@@ -28,6 +28,7 @@ const props = defineProps({
   templateBadge: { type: Boolean, default: false },
   statusKeyOf: { type: Function, default: null },
   emptyHint: { type: String, default: '暂无卡片,请管理员添加。' },
+  hideAddButton: { type: Boolean, default: false },
 })
 
 const { status, isReadonly } = useDashboard()
@@ -67,8 +68,9 @@ function closeEdit() { editing.value = null; dialogMode.value = 'edit' }
 
 const dialogStatusKey = computed(() => editing.value ? keyOf(editing.value) : '')
 
-const showAdd = computed(() => props.canEnterAdmin && !isReadonly.value)
-const hasEmpty = computed(() => !props.cards.length && !showAdd.value)
+const showAdd = computed(() => props.canEnterAdmin && !isReadonly.value && !props.hideAddButton)
+defineExpose({ openCreate })
+const hasEmpty = computed(() => !props.cards.length && !(props.canEnterAdmin && !isReadonly.value))
 const addTip = computed(() => props.createDefaults.scope === 'ltc'
   ? '新建一张本 LTC 私有卡(scope=ltc)'
   : '新建一张 PDT 级总览卡片(scope=pdt)')
@@ -120,18 +122,18 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 
       <div class="kpis-block">
         <div class="section-label">
-          <span class="sl-cn">关键指标</span>
+          <span class="sl-cn">关键目标</span>
         </div>
         <div v-if="kpisOf(card).length" class="kpi-groups">
           <div v-for="(kpi, i) in kpisOf(card)" :key="i" class="kpi-group">
             <div class="kpi-row goal">
               <span class="kr-label">目标</span>
               <span class="kr-text">{{ kpi.goal || '—' }}</span>
+              <span class="kpi-dot" :class="`tone-${kpi.color || 'gray'}`" :title="kpi.color || '未填'"></span>
             </div>
             <div class="kpi-row actual">
               <span class="kr-label">现状</span>
               <span class="kr-text">{{ kpi.actual || '—' }}</span>
-              <span v-if="kpi.color" class="kpi-dot" :class="`tone-${kpi.color}`" :title="kpi.color"></span>
             </div>
           </div>
         </div>
@@ -312,7 +314,7 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 .kpi-row.actual .kr-text {
   color: var(--text); font-weight: 600;
 }
-.kpi-row.actual .kpi-dot { margin-left: auto; flex: 0 0 auto; }
+.kpi-row.goal .kpi-dot { margin-left: auto; flex: 0 0 auto; }
 .kpi-dot {
   display: inline-block;
   width: 8px; height: 8px;

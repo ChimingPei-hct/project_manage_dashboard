@@ -36,7 +36,8 @@
 |------|----------|------|
 | `pdt.json` | `{}` | PDT 当前信息(单对象) |
 | `ltcs.json` | `[]` | LTC 列表 |
-| `modules.json` | `[]` | 模块定义(配置) |
+| `modules.json` | `[]` 或仅含 `scope=ltc_template` 模板项 | 模块定义(配置)。main 分支允许保留模板池(`scope=ltc_template`)作为 seed;`scope=pdt/ltc` 实例数据仍走 data 分支 |
+| `categories.json` | `[]` 或仅含 `scope=ltc_template` 模板项 | LTC 三级结构的大类层。`scope=ltc_template` = 模板池(可入 main),`scope=ltc` = LTC 实例(走 data 分支),PDT 不依赖 |
 | `module_status.json` | `{}` | 模块状态当前态 |
 | `module_updates.jsonl` | 空 | 模块状态历史流(append-only) |
 | `weekly_snapshots/` | 空目录 | 周快照存档 |

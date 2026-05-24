@@ -1,26 +1,27 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
 import { useView } from '../composables/useView.js'
 import { useAuth } from '../composables/useAuth.js'
 import { useAdmins } from '../composables/useAdmins.js'
 import { useContactCache } from '../composables/useContactCache.js'
+import { useEditableModules } from '../composables/useEditableModules.js'
 import { aggregateStatusTone, currentWeekRange } from '../composables/useStatusHelpers.js'
 import LtcTree from './LtcTree.vue'
 import TimelineBar from './TimelineBar.vue'
-import ModuleCardGrid from './ModuleCardGrid.vue'
-import ModuleRiskList from './ModuleRiskList.vue'
+import LtcCategoryGrid from './ltc/LtcCategoryGrid.vue'
 import Modal from './harness/Modal.vue'
 import LtcDrawer from './admin/LtcDrawer.vue'
 import ModuleDrawer from './admin/ModuleDrawer.vue'
-import AdminUsers from './admin/AdminUsers.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
+import CategoriesDrawer from './admin/CategoriesDrawer.vue'
 
 const { ltcs, status, ltcVisibleModules, statusKeyOf, isReadonly } = useDashboard()
 const { current, pushView } = useView()
 const { me } = useAuth()
 const { admins, reload: reloadAdmins } = useAdmins()
 const { ensureContacts } = useContactCache()
+const { canEdit } = useEditableModules()
 onMounted(() => { ensureContacts(); reloadAdmins() })
 
 const currentLtcId = computed(() => current.value.id || ltcs.value[0]?.id || '')
@@ -37,17 +38,19 @@ const canEnterLtcAdmin = computed(() => {
   return (ltcMap[currentLtcId.value] || []).includes(u.open_id)
 })
 
-const cards = computed(() => modules.value.map((m, i) => ({
-  id: m.scope === 'ltc_template' ? `${currentLtcId.value}::${m.id}` : m.id,
-  name: m.name,
-  owner_open_id: m.owner_open_id,
-  module: m,
-  kpi_fields: m.kpi_fields || [],
-  show_risk: true,
-  order: m.order ?? i,
-})))
-
 function ltcStatusKey(m) { return statusKeyOf(m, currentLtcId.value) }
+function canEditStatusKey(key) {
+  if (!key) return false
+  const sep = '::'
+  let ltcId = ''
+  let modId = key
+  if (key.includes(sep)) {
+    const i = key.indexOf(sep)
+    ltcId = key.slice(0, i)
+    modId = key.slice(i + sep.length)
+  }
+  return canEdit(modId, ltcId)
+}
 
 const summary = computed(() => {
   const total = { red: 0, yellow: 0, green: 0, gray: 0 }
@@ -62,16 +65,24 @@ const summary = computed(() => {
 function selectPdt() { pushView({ view: 'pdt', week: current.value.week }) }
 function selectLtc(id) { pushView({ view: 'ltc', id, week: current.value.week }) }
 
-const scrollRef = ref(null)
-async function maybeScrollToRisk() {
-  if (current.value.view !== 'risks') return
-  await nextTick()
-  const el = scrollRef.value?.querySelector('#risk-section')
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+/* 看板/风险 双 chip 开关:默认两个都开,点击反选,至少保留一个 */
+const showBoard = ref(true)
+const showRisk = ref(true)
+const viewMode = computed(() => {
+  if (showBoard.value && showRisk.value) return 'both'
+  if (showBoard.value) return 'board'
+  return 'risk'
+})
+function toggleBoard() {
+  if (showBoard.value && !showRisk.value) return // 至少保留一个
+  showBoard.value = !showBoard.value
 }
-watch(() => [current.value.view, currentLtcId.value], () => { maybeScrollToRisk() }, { immediate: true, flush: 'post' })
+function toggleRisk() {
+  if (showRisk.value && !showBoard.value) return
+  showRisk.value = !showRisk.value
+}
 
-const showAdminTool = ref('') // '' | 'ltc-base' | 'people' | 'snapshots'
+const showAdminTool = ref('') // '' | 'ltc-base' | 'snapshots' | 'categories'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
 
@@ -87,13 +98,31 @@ function closeModuleDrawer() { editingModuleId.value = '' }
       @select-pdt="selectPdt"
       @select-ltc="selectLtc"
     />
-    <div ref="scrollRef" class="scroll-col">
+    <div class="scroll-col">
       <header class="hdr">
         <h1>
           {{ currentLtc?.name || '请选择 LTC' }}
           <span class="date-range">{{ dateRange }}</span>
         </h1>
         <div class="hdr-right">
+          <div class="view-toggle" role="group" aria-label="看板/风险显示开关">
+            <button
+              class="toggle-chip"
+              :class="{ active: showBoard }"
+              v-tooltip="showBoard ? '隐藏看板段(至少保留一个)' : '显示看板段(全部模块的子项色块)'"
+              @click="toggleBoard"
+            >
+              <i class="dot board"></i>看板
+            </button>
+            <button
+              class="toggle-chip"
+              :class="{ active: showRisk }"
+              v-tooltip="showRisk ? '隐藏风险段(至少保留一个)' : '显示风险段(仅非绿模块与子项)'"
+              @click="toggleRisk"
+            >
+              <i class="dot risk"></i>风险
+            </button>
+          </div>
           <span class="tone-summary">
             <span class="chip red" v-tooltip="'Delay/Block 项总数'"><i class="dot"></i>{{ summary.red }}</span>
             <span class="chip yellow" v-tooltip="'预警项总数'"><i class="dot"></i>{{ summary.yellow }}</span>
@@ -102,14 +131,14 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
               class="tool-btn"
-              v-tooltip="'编辑本 LTC 基础信息、里程碑与模块清单'"
-              @click="openAdminTool('ltc-base')"
-            >⚙ LTC 配置</button>
+              v-tooltip="'编辑大类(Category)清单与负责人'"
+              @click="openAdminTool('categories')"
+            >🗂 大类</button>
             <button
               class="tool-btn"
-              v-tooltip="'管理人员与角色绑定(全局)'"
-              @click="openAdminTool('people')"
-            >👥 人员</button>
+              v-tooltip="'编辑本 LTC 基础信息、时间线与模块清单'"
+              @click="openAdminTool('ltc-base')"
+            >⚙ LTC 配置</button>
             <button
               class="tool-btn"
               v-tooltip="'查看历史周快照与定时冻结'"
@@ -120,27 +149,19 @@ function closeModuleDrawer() { editingModuleId.value = '' }
       </header>
 
       <section v-if="milestones.length" class="timeline-section">
-        <div class="section-title">里程碑 · 本 LTC 自有</div>
+        <div class="section-title">时间线 · 本 LTC 自有</div>
         <TimelineBar :milestones="milestones" />
       </section>
 
-      <section id="board-section" class="board-section">
-        <div class="section-title">看板 · {{ currentLtc?.name || '' }}</div>
-        <ModuleCardGrid
+      <section class="grid-wrap">
+        <LtcCategoryGrid
           v-if="currentLtcId"
-          :cards="cards"
           :ltc-id="currentLtcId"
-          :can-enter-admin="canEnterLtcAdmin"
-          :create-defaults="{ scope: 'ltc', ltc_id: currentLtcId, group: currentLtc?.name || '' }"
-          :template-badge="true"
+          :modules="modules"
+          :mode="viewMode"
           :status-key-of="ltcStatusKey"
-          empty-hint="该 LTC 暂无卡片,可在 PDT 总览全局看板新增基础卡,或点本页「+ 新增卡片」加私有卡。"
+          :can-edit-module-status="canEditStatusKey"
         />
-      </section>
-
-      <section id="risk-section" class="risk-section">
-        <div class="section-title">风险详情 · {{ currentLtc?.name || '' }}</div>
-        <ModuleRiskList :modules="modules" :ltc-id="currentLtcId" />
       </section>
     </div>
 
@@ -152,11 +173,11 @@ function closeModuleDrawer() { editingModuleId.value = '' }
         @deleted="closeAdminTool"
       />
     </Modal>
-    <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
-      <AdminUsers />
-    </Modal>
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
+    </Modal>
+    <Modal :open="showAdminTool === 'categories'" :title="`大类配置 · ${currentLtc?.name || ''}`" width="640px" @close="closeAdminTool">
+      <CategoriesDrawer v-if="currentLtcId" :ltc-id="currentLtcId" />
     </Modal>
     <Modal :open="!!editingModuleId" title="模块详情" width="880px" @close="closeModuleDrawer">
       <ModuleDrawer v-if="editingModuleId" :key="editingModuleId" :module-id="editingModuleId" @deleted="closeModuleDrawer" />
@@ -177,7 +198,6 @@ function closeModuleDrawer() { editingModuleId.value = '' }
   display: flex;
   flex-direction: column;
   gap: 22px;
-  scroll-behavior: smooth;
 }
 .hdr {
   display: flex; justify-content: space-between; align-items: flex-end;
@@ -195,6 +215,28 @@ h1 {
   font-variant-numeric: tabular-nums; font-weight: 500;
 }
 .hdr-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.view-toggle { display: inline-flex; gap: 4px; }
+.toggle-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600;
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 120ms, background 120ms, border-color 120ms;
+}
+.toggle-chip:hover { color: var(--accent); border-color: var(--accent); }
+.toggle-chip.active {
+  background: var(--accent-soft, var(--panel-soft));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.toggle-chip .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+.toggle-chip .dot.board { background: var(--status-green); }
+.toggle-chip .dot.risk { background: var(--status-red); }
+
 .tone-summary { display: inline-flex; gap: 4px; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px;
@@ -227,14 +269,10 @@ h1 {
   background: var(--panel);
 }
 
-.timeline-section, .board-section, .risk-section { padding: 0 24px; }
+.timeline-section, .grid-wrap { padding: 0 24px; }
 .section-title {
   font-size: 14px; font-weight: 700;
   margin-bottom: 8px; color: var(--text);
   padding-bottom: 4px; border-bottom: 1px solid var(--border-subtle);
 }
-/* 让 ModuleCardGrid 自带的 24px padding 不与本页冲突 — 由于 board-section 已有 padding,清掉网格本身的 padding */
-.board-section :deep(.cards-grid) { padding: 0; }
-.board-section :deep(.cards-toolbar) { padding: 0 0 10px; }
-.board-section :deep(.empty) { padding: 36px 0; }
 </style>

@@ -1,36 +1,47 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
+import { useAuth } from '../composables/useAuth.js'
+import LtcCreateDialog from './admin/LtcCreateDialog.vue'
 
 const props = defineProps({
   currentLtcId: { type: String, default: '' },
 })
-const emit = defineEmits(['select-pdt', 'select-ltc'])
+const emit = defineEmits(['select-ltc'])
 
-const { pdt, ltcs, modulesByScope } = useDashboard()
+const { ltcs, modulesByScope, refresh } = useDashboard()
+const { me, refresh: refreshMe } = useAuth()
+
+onMounted(() => { if (!me.value) refreshMe() })
 
 const sortedLtcs = computed(() =>
   (ltcs.value || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 )
+
+const canCreateLtc = computed(() => !!(me.value && (me.value.is_super || me.value.is_pdt_admin)))
 
 function ltcModuleCount(ltcId) {
   const tpl = (modulesByScope.value.ltc_template || []).length
   const own = (modulesByScope.value.ltc[ltcId] || []).length
   return tpl + own
 }
+
+const showCreate = ref(false)
+const toast = ref('')
+function flashToast(msg) { toast.value = msg; setTimeout(() => { toast.value = '' }, 3500) }
+
+async function onCreated({ id, templateCopied, templateErr }) {
+  showCreate.value = false
+  await refresh()
+  emit('select-ltc', id)
+  if (templateErr) flashToast(`LTC 已创建,模板拷贝失败:${templateErr}`)
+  else if (templateCopied) flashToast('LTC 已创建,模板已拷贝')
+  else flashToast('LTC 已创建(未拷贝模板)')
+}
 </script>
 
 <template>
   <aside class="ltc-tree">
-    <div
-      class="node root"
-      v-tooltip="'返回 PDT 总览页'"
-      @click="emit('select-pdt')"
-    >
-      <span class="icon">📦</span>
-      <span class="lbl">{{ pdt?.name || 'PDT' }}</span>
-      <span class="badge">PDT</span>
-    </div>
     <div class="section-label">LTC 子项目</div>
     <div v-if="!sortedLtcs.length" class="empty">尚未创建 LTC</div>
     <div
@@ -45,6 +56,22 @@ function ltcModuleCount(ltcId) {
       <span class="lbl">{{ l.name }}</span>
       <span class="count" v-tooltip="'该 LTC 下可见模块数(模板 + 自有)'">{{ ltcModuleCount(l.id) }}</span>
     </div>
+    <div
+      v-if="canCreateLtc"
+      class="node create"
+      v-tooltip="'创建一个新 LTC,可选从模板复制 6 大类 + 18 示例模块'"
+      @click="showCreate = true"
+    >
+      <span class="icon">+</span>
+      <span class="lbl">新建 LTC</span>
+    </div>
+    <p v-if="toast" class="toast">{{ toast }}</p>
+
+    <LtcCreateDialog
+      :open="showCreate"
+      @close="showCreate = false"
+      @created="onCreated"
+    />
   </aside>
 </template>
 
@@ -71,7 +98,6 @@ function ltcModuleCount(ltcId) {
   color: var(--accent);
   font-weight: 600;
 }
-.node.root { font-weight: 700; }
 .lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon { width: 16px; text-align: center; }
 .badge {
@@ -100,4 +126,22 @@ function ltcModuleCount(ltcId) {
   letter-spacing: 0.5px;
 }
 .empty { color: var(--text-muted); font-size: 12px; padding: 8px 10px; }
+.node.create {
+  margin-top: 8px;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  padding: 8px 10px;
+}
+.node.create:hover {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.node.create .icon { font-size: 14px; font-weight: 700; }
+.toast {
+  margin: 8px 4px 0; padding: 6px 10px;
+  font-size: 11.5px; color: var(--accent);
+  background: var(--panel); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+}
 </style>

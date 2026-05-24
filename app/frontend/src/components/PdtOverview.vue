@@ -7,10 +7,7 @@ import { useContactCache } from '../composables/useContactCache.js'
 import TimelineBar from './TimelineBar.vue'
 import ModuleCardGrid from './ModuleCardGrid.vue'
 import Modal from './harness/Modal.vue'
-import MilestonesDrawer from './admin/MilestonesDrawer.vue'
-import OverviewCardsDrawer from './admin/OverviewCardsDrawer.vue'
-import ModuleDrawer from './admin/ModuleDrawer.vue'
-import AdminUsers from './admin/AdminUsers.vue'
+import AdminPerms from './admin/AdminPerms.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
 
 const { pdt, modulesByScope, isReadonly } = useDashboard()
@@ -48,17 +45,20 @@ const cards = computed(() => {
   })).sort((a, b) => a.order - b.order)
 })
 
-const showAdminTool = ref('') // '' | 'milestones' | 'overview' | 'people' | 'snapshots'
+const showAdminTool = ref('') // '' | 'perms' | 'snapshots'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
-
-const editingModuleId = ref('')
-function pickModule(id) { editingModuleId.value = id }
-function closeModuleDrawer() { editingModuleId.value = '' }
+function openMilestonesPage() {
+  window.open(`${window.location.pathname}?view=milestones`, '_blank', 'noopener')
+}
 
 const { current, pushView } = useView()
 const sub = computed(() => current.value.sub || 'timeline')
 function switchSub(s) { pushView({ ...current.value, sub: s }) }
+
+const gridRef = ref(null)
+const canAddCard = computed(() => sub.value === 'kanban' && canEnterPdtAdmin.value && !isReadonly.value)
+function triggerCreate() { gridRef.value?.openCreate?.() }
 </script>
 
 <template>
@@ -66,35 +66,41 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
     <nav class="sub-tabs">
       <button
         :class="{ primary: sub === 'timeline' }"
-        v-tooltip="'查看里程碑甘特图'"
+        v-tooltip="'查看时间线'"
         @click="switchSub('timeline')"
-      >甘特图</button>
+      >时间线</button>
       <button
         :class="{ primary: sub === 'kanban' }"
         v-tooltip="'查看 PDT 模块卡片看板'"
         @click="switchSub('kanban')"
       >全局看板</button>
+      <button
+        v-if="canAddCard"
+        type="button"
+        class="add-card-btn primary"
+        v-tooltip="'新建一张 PDT 级总览卡片(scope=pdt)'"
+        @click="triggerCreate"
+      ><span class="add-card-plus">+</span>新增卡片</button>
       <div v-if="canEnterPdtAdmin && !isReadonly" class="admin-tools">
-        <button
-          class="tool-btn"
-          v-tooltip="'编辑里程碑(甘特图数据源)'"
-          @click="openAdminTool('milestones')"
-        >🗓 里程碑</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'管理 PDT 总览卡片(新增 / 排序 / 进入模块详情)'"
-          @click="openAdminTool('overview')"
-        >🧩 总览卡片</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'管理 PDT/LTC Admin 与 Owner 绑定'"
-          @click="openAdminTool('people')"
-        >👥 人员</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'查看历史周快照与定时冻结'"
-          @click="openAdminTool('snapshots')"
-        >📸 快照</button>
+        <template v-if="sub === 'timeline'">
+          <button
+            class="tool-btn"
+            v-tooltip="'在新标签页编辑时间线'"
+            @click="openMilestonesPage"
+          >🗓 时间线管理</button>
+        </template>
+        <template v-else>
+          <button
+            class="tool-btn"
+            v-tooltip="'设置项目 Owner 与管理员名单'"
+            @click="openAdminTool('perms')"
+          >⚙ 权限管理</button>
+          <button
+            class="tool-btn"
+            v-tooltip="'查看历史周快照与定时冻结'"
+            @click="openAdminTool('snapshots')"
+          >📸 快照</button>
+        </template>
       </div>
     </nav>
 
@@ -102,26 +108,19 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
 
     <ModuleCardGrid
       v-if="sub === 'kanban'"
+      ref="gridRef"
       :cards="cards"
       :can-enter-admin="canEnterPdtAdmin"
       :create-defaults="{ scope: 'pdt', group: '总览' }"
+      :hide-add-button="true"
       empty-hint="暂无 PDT 级总览卡片,请管理员添加。"
     />
 
-    <Modal :open="showAdminTool === 'milestones'" title="里程碑编辑" width="960px" @close="closeAdminTool">
-      <MilestonesDrawer />
-    </Modal>
-    <Modal :open="showAdminTool === 'overview'" title="PDT 总览卡片" width="880px" @close="closeAdminTool">
-      <OverviewCardsDrawer @pick-module="pickModule" />
-    </Modal>
-    <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
-      <AdminUsers />
+    <Modal :open="showAdminTool === 'perms'" title="权限管理" width="640px" @close="closeAdminTool">
+      <AdminPerms />
     </Modal>
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
-    </Modal>
-    <Modal :open="!!editingModuleId" title="模块详情" width="880px" @close="closeModuleDrawer">
-      <ModuleDrawer v-if="editingModuleId" :key="editingModuleId" :module-id="editingModuleId" @deleted="closeModuleDrawer" />
     </Modal>
   </div>
 </template>
@@ -165,6 +164,16 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+.add-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.add-card-plus {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 </style>

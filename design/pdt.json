@@ -1,106 +1,119 @@
 {
-  "code": "Luna_6_test",
-  "name": "Luna_6_test",
+  "code": "Luna6",
+  "name": "Luna6",
+  "icon": "assets/luna-6/icon.svg",
   "description": "Luna 6 是 PDT 级低阶智能驾驶产品线,含两个变体:\n- Luna6A: 8MP 一体机,可扩展至 5R+DMS;面向法规准入级最小系统,NCAP 5 星,safety always on\n- Luna6B: 5V5R12U 行泊一体小域控;ICA 纵向体验对齐 HSA Lite\n使命:智能驾驶平权,让全球每一个人的出行更安全、更便捷。\n愿景:行业领导者,将领先的智能驾驶产品带到世界的每一个角落。\n长期目标:生命周期出货千万,2030 年前进入全球低阶智驾 Top3。",
   "milestones": [
     {
-      "name": "PT0 S.D00 Bring-Up",
+      "label": "PT0 S.D00 Bring-Up",
       "date": "2025-09-19",
       "type": "version",
       "note": "G010v1 / HCT V0.0.1"
     },
     {
-      "name": "PT0 S.E00 PT1-1 装车 / preDV",
+      "label": "PT0 S.E00 PT1-1 装车 / preDV",
       "date": "2025-09-26",
       "type": "version",
       "note": "G010v2 / HCT V1.0.0"
     },
     {
-      "name": "PT0 S.F00 PT1-2 装车 / 行泊车可激活",
+      "label": "PT0 S.F00 PT1-2 装车 / 行泊车可激活",
       "date": "2025-10-15",
       "type": "version",
       "note": "G020v1 / HCT V1.1.0"
     },
     {
-      "name": "PT1-1 S.F01 功能迭代",
+      "label": "PT1-1 S.F01 功能迭代",
       "date": "2025-10-30",
       "type": "version",
       "note": "G020v2 / HCT V2.0.0"
     },
     {
-      "name": "PT1-2-1 S.F02 内部测试 & 外部联调(全功能)",
+      "label": "PT1-2-1 S.F02 内部测试 & 外部联调(全功能)",
       "date": "2025-11-15",
       "type": "version",
       "note": "G020v3 / HCT V3.0.0"
     },
     {
-      "name": "PT1-2 S.F03 首版性能软件(PT2 装车,性能 60%)",
+      "label": "PT1-2 S.F03 首版性能软件(PT2 装车,性能 60%)",
       "date": "2025-11-30",
       "type": "version",
       "note": "G030v1 / HCT V4.0.0"
     },
     {
-      "name": "PT1-2 S.F04 性能迭代(性能 80%)",
+      "label": "PT1-2 S.F04 性能迭代(性能 80%)",
       "date": "2025-12-30",
       "type": "version",
       "note": "G040v1 / HCT V5.0.0"
     },
     {
-      "name": "PT2 S.F05 性能优化(性能 100%)",
+      "label": "PT2 S.F05 性能优化(性能 100%)",
       "date": "2026-01-30",
       "type": "version",
       "note": "G050v1 / HCT V5.1.0"
     },
     {
-      "name": "PT2 S.F06 Pre-SOP(性能 100%)",
+      "label": "PT2 S.F06 Pre-SOP(性能 100%)",
       "date": "2026-02-28",
       "type": "TR",
       "note": "G060v1 / HCT V5.2.0"
     },
     {
-      "name": "PT2 S.000 软件冻结 / SOP",
+      "label": "PT2 S.000 软件冻结 / SOP",
       "date": "2026-03-07",
       "type": "SOP",
       "note": "G070v1 / HCT V6.0.0"
     },
     {
-      "name": "OTA1 S.001",
+      "label": "OTA1 S.001",
       "date": "2026-05-07",
       "type": "OTA",
       "note": "G080v1"
     },
     {
-      "name": "OTA2 S.002",
+      "label": "OTA2 S.002",
       "date": "2026-07-07",
       "type": "OTA",
       "note": "G090v1"
     },
     {
-      "name": "OTA3 S.003",
+      "label": "OTA3 S.003",
       "date": "2026-09-07",
       "type": "OTA",
       "note": "G100v1"
     },
     {
-      "name": "国内项目出海 Alpha 量产",
+      "label": "国内项目出海 Alpha 量产",
       "date": "2026-06-30",
       "type": "goal",
       "note": "26 年 Q2 前达成"
     },
     {
-      "name": "极致成本之上的产品竞争力",
+      "label": "极致成本之上的产品竞争力",
       "date": "2027-12-31",
       "type": "goal",
       "note": "27 年目标"
     },
     {
-      "name": "海外市场全面铺开",
+      "label": "海外市场全面铺开",
       "date": "2028-12-31",
       "type": "goal",
       "note": "28 年目标"
+    },
+    {
+      "label": "测试测试测试 ",
+      "date": "2026-05-31",
+      "type": "review",
+      "note": ""
+    },
+    {
+      "label": "新节点",
+      "date": "2026-05-24",
+      "type": "TR",
+      "note": ""
     }
   ],
-  "updated_at": "2026-05-24T15:13:38.580136+08:00",
+  "updated_at": "2026-05-24T22:30:32.595699+08:00",
   "metadata": {
     "variants": [
       "Luna6A",

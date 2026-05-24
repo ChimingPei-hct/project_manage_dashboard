@@ -1174,5 +1174,466 @@
     "metadata": {
       "weekly_progress": "算法查找下行链路问题已查到,已同步 ME;Monitor 模块代码开发完成"
     }
+  },
+  {
+    "id": "mod-tpl-static-perception",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "感知",
+    "category_id": "cat-tpl-perception",
+    "name": "静态感知",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "lane",
+        "name": "车道线",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "freespace",
+        "name": "可行驶区域",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "tsr",
+        "name": "TSR 标识识别",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-dynamic-perception",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "感知",
+    "category_id": "cat-tpl-perception",
+    "name": "动态感知",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "detection",
+        "name": "目标识别",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "tracking",
+        "name": "目标跟踪",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "obstacle",
+        "name": "障碍物检测",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-parking-perception",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "感知",
+    "category_id": "cat-tpl-perception",
+    "name": "泊车感知",
+    "order": 3,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "slot",
+        "name": "车位检测",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "obstacle",
+        "name": "障碍物",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-perception-integration",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "感知",
+    "category_id": "cat-tpl-perception",
+    "name": "感知集成",
+    "order": 4,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-driving",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "规控",
+    "category_id": "cat-tpl-pnc",
+    "name": "行车规控",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "acc",
+        "name": "ACC",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "ica",
+        "name": "ICA",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "noa",
+        "name": "NOA",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-active-safety",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "规控",
+    "category_id": "cat-tpl-pnc",
+    "name": "主动安全",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "aeb",
+        "name": "AEB",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "fcw",
+        "name": "FCW",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "ldw",
+        "name": "LDW",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "ldp",
+        "name": "LDP",
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-parking-pnc",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "规控",
+    "category_id": "cat-tpl-pnc",
+    "name": "泊车规控",
+    "order": 3,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "fapa",
+        "name": "FAPA",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "rpa",
+        "name": "RPA",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "cpa",
+        "name": "CPA",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "raeb",
+        "name": "RAEB",
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-hmi",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "HMI / 状态机",
+    "category_id": "cat-tpl-hmi-sm",
+    "name": "HMI",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-drive-park-sm",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "HMI / 状态机",
+    "category_id": "cat-tpl-hmi-sm",
+    "name": "行泊状态机",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-ota",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "基建",
+    "category_id": "cat-tpl-infra",
+    "name": "OTA",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "recovery",
+        "name": "Recovery",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-comm",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "基建",
+    "category_id": "cat-tpl-infra",
+    "name": "通讯",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "ipc",
+        "name": "IPC",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "ros2",
+        "name": "ROS2",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "can",
+        "name": "CAN",
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "eth",
+        "name": "ETH (SOMEIP/DoIP)",
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-diagnosis",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "基建",
+    "category_id": "cat-tpl-infra",
+    "name": "诊断",
+    "order": 3,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-platform-base",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "基建",
+    "category_id": "cat-tpl-infra",
+    "name": "平台底座(A 核 + MCU)",
+    "order": 4,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [
+      {
+        "id": "acore",
+        "name": "A 核系统及底软",
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
+      },
+      {
+        "id": "mcu",
+        "name": "MCU",
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
+      }
+    ],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-functional-safety",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "安全",
+    "category_id": "cat-tpl-safety",
+    "name": "功能安全",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-info-security",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "安全",
+    "category_id": "cat-tpl-safety",
+    "name": "信息安全",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-calibration",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "工具与交付",
+    "category_id": "cat-tpl-tools",
+    "name": "标定",
+    "order": 1,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-replay",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "工具与交付",
+    "category_id": "cat-tpl-tools",
+    "name": "回灌仿真",
+    "order": 2,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "mod-tpl-performance",
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "group": "工具与交付",
+    "category_id": "cat-tpl-tools",
+    "name": "性能专项",
+    "order": 3,
+    "owner_open_id": null,
+    "kpi_fields": [],
+    "sub_items": [],
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
   }
 ]

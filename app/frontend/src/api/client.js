@@ -5,16 +5,17 @@
 
 const DEFAULT_TIMEOUT = 10000
 
-async function request(method, url, { body, signal, timeout = DEFAULT_TIMEOUT } = {}) {
+async function request(method, url, { body, formData, signal, timeout = DEFAULT_TIMEOUT } = {}) {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeout)
   const init = {
     method,
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: formData ? {} : { 'Content-Type': 'application/json' },
     signal: signal || ctrl.signal,
   }
-  if (body !== undefined) init.body = JSON.stringify(body)
+  if (formData) init.body = formData
+  else if (body !== undefined) init.body = JSON.stringify(body)
   try {
     const res = await fetch(url, init)
     let payload = null
@@ -38,6 +39,7 @@ async function request(method, url, { body, signal, timeout = DEFAULT_TIMEOUT } 
 export const api = {
   get: (url, opts) => request('GET', url, opts),
   post: (url, body, opts) => request('POST', url, { ...(opts || {}), body }),
+  postForm: (url, formData, opts) => request('POST', url, { ...(opts || {}), formData, timeout: 30000 }),
   put: (url, body, opts) => request('PUT', url, { ...(opts || {}), body }),
   del: (url, opts) => request('DELETE', url, opts),
 }

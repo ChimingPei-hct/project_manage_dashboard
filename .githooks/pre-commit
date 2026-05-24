@@ -17,7 +17,7 @@ fi
 # 例外白名单(design/03 §4.1):Luna 6 PDT 真实数据过渡期内允许进 main
 violations=$(git diff --cached --name-only --diff-filter=ACMR \
   | grep -E '^design/(.+\.(json|jsonl)|weekly_snapshots/)' \
-  | grep -Ev '^design/(pdt|ltcs|modules|module_status|user_registry)\.json$' \
+  | grep -Ev '^design/(pdt|ltcs|modules|module_status|user_registry|categories)\.json$' \
   || true)
 
 if [ -n "$violations" ]; then

@@ -2,6 +2,7 @@
 /* 单个模块的详细编辑抽屉:基础信息、KPI 字段、子项(sub_items)增删改、Owner 绑定 */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
+import { useCategories } from '../../composables/useCategories.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
 import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import UserSearchInput from '../UserSearchInput.vue'
@@ -12,10 +13,18 @@ const props = defineProps({ moduleId: { type: String, required: true } })
 const emit = defineEmits(['deleted'])
 
 const { modules, ltcs, refresh } = useDashboard()
+const { categories, reload: reloadCategories } = useCategories()
 const { ensureContacts } = useContactCache()
-onMounted(() => { ensureContacts() })
+onMounted(() => { ensureContacts(); reloadCategories() })
 const module = computed(() => (modules.value || []).find(m => m.id === props.moduleId))
 const ltcName = computed(() => ltcs.value.find(l => l.id === module.value?.ltc_id)?.name || '')
+const categoryOptions = computed(() => {
+  const m = module.value
+  if (!m || m.scope === 'pdt') return []
+  return (categories.value || [])
+    .filter(c => c.scope === 'ltc_template' || (c.scope === 'ltc' && c.ltc_id === m.ltc_id))
+    .slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+})
 
 const draft = ref(null)
 const dirty = ref(false)
@@ -27,6 +36,7 @@ watch(module, (m) => {
   draft.value = {
     name: m.name,
     group: m.group,
+    category_id: m.category_id || null,
     owner_open_id: m.owner_open_id,
     kpi_fields: (m.kpi_fields || []).map(k => ({ ...k })),
     sub_items: (m.sub_items || []).map(s => ({
@@ -73,6 +83,7 @@ async function save() {
     const body = {
       name: draft.value.name,
       group: draft.value.group,
+      category_id: draft.value.category_id || null,
       owner_open_id: draft.value.owner_open_id || null,
       kpi_fields: draft.value.kpi_fields,
       sub_items: draft.value.sub_items.map((s, i) => ({ ...s, order: i + 1 })),
@@ -124,6 +135,15 @@ async function doDelete() {
         <label>
           <span>分组</span>
           <input v-model="draft.group" @input="touch" placeholder="如:硬件和底软" />
+        </label>
+        <label v-if="module.scope !== 'pdt'" class="span-2">
+          <span>大类(Category) · 仅 LTC 看板使用</span>
+          <select v-model="draft.category_id" @change="touch" v-tooltip="'选择本模块所属的大类(顶层分组)。空=未分类'">
+            <option :value="null">未分类</option>
+            <option v-for="c in categoryOptions" :key="c.id" :value="c.id">
+              {{ c.name }}({{ c.scope === 'ltc_template' ? '共享' : '本 LTC' }})
+            </option>
+          </select>
         </label>
         <label class="span-2">
           <span>Owner</span>

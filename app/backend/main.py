@@ -10,9 +10,11 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import fcntl
 import json
 import os
+import re
 import secrets
 import time
 import uuid
@@ -24,9 +26,9 @@ import urllib.parse
 
 import httpx
 import jwt
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, File, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +101,7 @@ _LOCKS: dict[str, int] = {
     "pdt": _lock_fd("pdt"),
     "ltcs": _lock_fd("ltcs"),
     "modules": _lock_fd("modules"),
+    "categories": _lock_fd("categories"),
     "status": _lock_fd("status"),
     "updates": _lock_fd("updates"),
     "snapshots": _lock_fd("snapshots"),
@@ -202,6 +205,14 @@ def write_modules(data: list[dict]) -> None:
     _write_json_atomic("modules.json", data)
 
 
+def read_categories() -> list[dict]:
+    return _read_json("categories.json", [])
+
+
+def write_categories(data: list[dict]) -> None:
+    _write_json_atomic("categories.json", data)
+
+
 def read_status() -> dict:
     return _read_json("module_status.json", {})
 
@@ -296,6 +307,15 @@ def is_ltc_admin(open_id: str | None, ltc_id: str | None) -> bool:
     return open_id in read_ltc_admins().get(ltc_id, [])
 
 
+def is_any_ltc_admin(open_id: str | None) -> bool:
+    """是否是任一 LTC 的 admin(含 PDT/Super 的级联)。用于 PDT 图标这种 PDT 级配置的宽松写权限。"""
+    if not open_id:
+        return False
+    if is_pdt_admin(open_id):
+        return True
+    return any(open_id in oids for oids in read_ltc_admins().values())
+
+
 def is_module_owner(open_id: str | None, module_id: str | None) -> bool:
     if not open_id or not module_id:
         return False
@@ -342,6 +362,20 @@ def can_edit_module_status(open_id: str | None, status_key: str | None) -> bool:
             return True
         return False
     return False
+
+
+def can_edit_resource(open_id: str | None, resource: dict | None) -> bool:
+    """统一的"资源级"写权限:admin/owner 越权,否则只有创建者可改可删。
+
+    PDT Admin(含 Super)对任意资源具备越权权;其他人必须是该资源的 created_by_open_id。
+    历史数据缺 created_by_open_id 视为 None,只有 admin 能改 — 不破坏现状,且为新建资源
+    引入"创建者"维度。
+    """
+    if is_pdt_admin(open_id):
+        return True
+    if not open_id or not isinstance(resource, dict):
+        return False
+    return resource.get("created_by_open_id") == open_id
 
 
 def can_freeze_snapshot(open_id: str | None) -> bool:
@@ -603,6 +637,97 @@ async def api_put_pdt(request: Request):
 
 
 # ---------------------------------------------------------------------------
+# PDT 图标(单实例元数据;详见 design/04 §4.1.x + design/13 §6.0)
+# ---------------------------------------------------------------------------
+
+_ICON_MAX_BYTES = 256 * 1024
+_ICON_EXT_BY_MIME = {
+    "image/svg+xml": ".svg",
+    "image/png": ".png",
+}
+_ASSETS_ALLOWED_SUFFIXES = {".svg", ".png", ".jpg", ".jpeg", ".ico"}
+
+
+def _safe_pdt_code() -> str:
+    """PDT 图标目录名,做基本 sanitize 防路径穿越。"""
+    code = (read_pdt().get("code") or "default").strip()
+    safe = "".join(c for c in code if c.isalnum() or c in ("-", "_")).lower()
+    return safe or "default"
+
+
+@app.post("/api/pdt/icon")
+async def api_upload_pdt_icon(request: Request, file: UploadFile = File(...)):
+    oid = current_open_id(request)
+    if not is_any_ltc_admin(oid):
+        raise HTTPException(403, "forbidden")
+    ext = _ICON_EXT_BY_MIME.get((file.content_type or "").lower())
+    if not ext:
+        raise HTTPException(422, detail={"detail": "only image/svg+xml or image/png allowed", "code": "bad_mime"})
+    content = await file.read()
+    if len(content) > _ICON_MAX_BYTES:
+        raise HTTPException(422, detail={"detail": f"file too large (>{_ICON_MAX_BYTES} bytes)", "code": "too_large"})
+    if len(content) == 0:
+        raise HTTPException(422, detail={"detail": "empty file", "code": "empty"})
+
+    code = _safe_pdt_code()
+    asset_dir = DATA_DIR / "assets" / code
+    asset_dir.mkdir(parents=True, exist_ok=True)
+    # 清理同名其他扩展的旧图标(避免 svg/png 并存)
+    for old_ext in _ICON_EXT_BY_MIME.values():
+        old = asset_dir / f"icon{old_ext}"
+        if old.exists() and old_ext != ext:
+            try:
+                old.unlink()
+            except OSError:
+                pass
+    target = asset_dir / f"icon{ext}"
+    tmp = target.with_suffix(target.suffix + ".tmp")
+    tmp.write_bytes(content)
+    os.replace(tmp, target)
+
+    rel = f"assets/{code}/icon{ext}"
+    with _FileLock("pdt"):
+        cur = read_pdt()
+        cur["icon"] = rel
+        cur["updated_at"] = now_iso()
+        write_pdt(cur)
+    await _broadcast("config:reload", {"kind": "pdt"})
+    return {"icon": rel}
+
+
+@app.delete("/api/pdt/icon")
+async def api_delete_pdt_icon(request: Request):
+    oid = current_open_id(request)
+    if not is_any_ltc_admin(oid):
+        raise HTTPException(403, "forbidden")
+    with _FileLock("pdt"):
+        cur = read_pdt()
+        cur.pop("icon", None)
+        cur["updated_at"] = now_iso()
+        write_pdt(cur)
+    await _broadcast("config:reload", {"kind": "pdt"})
+    return {"ok": True}
+
+
+@app.get("/assets/{path:path}")
+def api_get_asset(path: str):
+    """实例静态资源只读路由。白名单后缀 + 路径穿越防护。"""
+    if ".." in path or path.startswith("/"):
+        raise HTTPException(400, "invalid path")
+    target = (DATA_DIR / "assets" / path).resolve()
+    root = (DATA_DIR / "assets").resolve()
+    try:
+        target.relative_to(root)
+    except ValueError:
+        raise HTTPException(400, "invalid path")
+    if target.suffix.lower() not in _ASSETS_ALLOWED_SUFFIXES:
+        raise HTTPException(404, "not allowed")
+    if not target.is_file():
+        raise HTTPException(404, "not found")
+    return FileResponse(str(target))
+
+
+# ---------------------------------------------------------------------------
 # LTCs
 # ---------------------------------------------------------------------------
 
@@ -634,6 +759,7 @@ async def api_create_ltc(request: Request):
             "milestones": body.get("milestones", []) or [],
             "created_at": now_iso(),
             "updated_at": now_iso(),
+            "created_by_open_id": oid,
             "metadata": body.get("metadata", {}),
         }
         rows.append(row)
@@ -645,13 +771,13 @@ async def api_create_ltc(request: Request):
 @app.put("/api/ltcs/{ltc_id}")
 async def api_update_ltc(ltc_id: str, request: Request):
     oid = current_open_id(request)
-    if not is_pdt_admin(oid):
-        raise HTTPException(403, "forbidden")
     body = await request.json()
     with _FileLock("ltcs"):
         rows = read_ltcs()
         for r in rows:
             if r["id"] == ltc_id:
+                if not can_edit_resource(oid, r):
+                    raise HTTPException(403, "forbidden")
                 for k in ("name", "order", "archived", "milestones", "metadata"):
                     if k in body:
                         r[k] = body[k]
@@ -665,12 +791,16 @@ async def api_update_ltc(ltc_id: str, request: Request):
 @app.delete("/api/ltcs/{ltc_id}")
 async def api_delete_ltc(ltc_id: str, request: Request):
     oid = current_open_id(request)
-    if not is_pdt_admin(oid):
-        raise HTTPException(403, "forbidden")
     with _FileLock("ltcs", "modules", "status"):
+        ltcs_rows = read_ltcs()
+        target = next((r for r in ltcs_rows if r["id"] == ltc_id), None)
+        if not target:
+            raise HTTPException(404, "ltc not found")
+        if not can_edit_resource(oid, target):
+            raise HTTPException(403, "forbidden")
         if any(m.get("ltc_id") == ltc_id for m in read_modules()):
             raise HTTPException(422, "ltc has modules; archive instead")
-        rows = [r for r in read_ltcs() if r["id"] != ltc_id]
+        rows = [r for r in ltcs_rows if r["id"] != ltc_id]
         write_ltcs(rows)
         # 清理该 LTC 在模板模块下的状态键 <ltc_id>::*
         status = read_status()
@@ -681,6 +811,183 @@ async def api_delete_ltc(ltc_id: str, request: Request):
             write_status(status)
     await _broadcast("config:reload", {"kind": "ltcs"})
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Categories (LTC 三级结构的大类层)
+# ---------------------------------------------------------------------------
+
+VALID_CATEGORY_SCOPES = {"ltc_template", "ltc"}
+CATEGORY_ID_RE = re.compile(r"^[a-z][a-z0-9-]{1,63}$")
+
+
+@app.get("/api/categories")
+def api_get_categories(scope: str | None = None, ltc_id: str | None = None):
+    rows = read_categories()
+    if scope:
+        rows = [r for r in rows if r.get("scope") == scope]
+    if ltc_id:
+        rows = [r for r in rows if r.get("ltc_id") == ltc_id]
+    return rows
+
+
+def _check_category_perm(oid: str, scope: str, ltc_id: str | None) -> None:
+    if scope == "ltc":
+        if not is_ltc_admin(oid, ltc_id):
+            raise HTTPException(403, "forbidden")
+    else:
+        if not is_pdt_admin(oid):
+            raise HTTPException(403, "forbidden")
+
+
+@app.post("/api/categories")
+async def api_create_category(request: Request):
+    oid = current_open_id(request)
+    body = await request.json()
+    cid = body.get("id")
+    name = (body.get("name") or "").strip()
+    scope = body.get("scope")
+    if not cid or not CATEGORY_ID_RE.match(cid):
+        raise HTTPException(422, "invalid id")
+    if not name or len(name) > 32:
+        raise HTTPException(422, "invalid name")
+    if scope not in VALID_CATEGORY_SCOPES:
+        raise HTTPException(422, "invalid scope")
+    ltc_id = body.get("ltc_id")
+    if scope == "ltc":
+        if not ltc_id:
+            raise HTTPException(422, "ltc_id required for scope=ltc")
+        if not any(l["id"] == ltc_id for l in read_ltcs()):
+            raise HTTPException(422, f"ltc_id {ltc_id} not found")
+    else:
+        if ltc_id:
+            raise HTTPException(422, f"ltc_id must be null for scope={scope}")
+        ltc_id = None
+    _check_category_perm(oid, scope, ltc_id)
+    with _FileLock("categories"):
+        rows = read_categories()
+        if any(r["id"] == cid for r in rows):
+            raise HTTPException(409, "category id exists")
+        peers = [r for r in rows if r.get("scope") == scope and r.get("ltc_id") == ltc_id]
+        if any(r.get("name") == name for r in peers):
+            raise HTTPException(409, "category name exists in scope")
+        row = {
+            "id": cid,
+            "name": name,
+            "owner_open_id": body.get("owner_open_id") or None,
+            "order": body.get("order", len(peers) + 1),
+            "scope": scope,
+            "ltc_id": ltc_id,
+            "created_at": now_iso(),
+            "updated_at": now_iso(),
+            "created_by_open_id": oid,
+            "metadata": body.get("metadata", {}),
+        }
+        rows.append(row)
+        write_categories(rows)
+    await _broadcast("config:reload", {"kind": "categories"})
+    return row
+
+
+@app.put("/api/categories/{category_id}")
+async def api_update_category(category_id: str, request: Request):
+    oid = current_open_id(request)
+    body = await request.json()
+    with _FileLock("categories"):
+        rows = read_categories()
+        for r in rows:
+            if r["id"] != category_id:
+                continue
+            _check_category_perm(oid, r.get("scope"), r.get("ltc_id"))
+            if "name" in body:
+                name = (body["name"] or "").strip()
+                if not name or len(name) > 32:
+                    raise HTTPException(422, "invalid name")
+                peers = [x for x in rows if x.get("scope") == r.get("scope") and x.get("ltc_id") == r.get("ltc_id") and x["id"] != category_id]
+                if any(x.get("name") == name for x in peers):
+                    raise HTTPException(409, "category name exists in scope")
+                r["name"] = name
+            for k in ("owner_open_id", "order", "metadata"):
+                if k in body:
+                    r[k] = body[k]
+            r["updated_at"] = now_iso()
+            write_categories(rows)
+            await _broadcast("config:reload", {"kind": "categories"})
+            return r
+    raise HTTPException(404, "category not found")
+
+
+@app.delete("/api/categories/{category_id}")
+async def api_delete_category(category_id: str, request: Request):
+    oid = current_open_id(request)
+    with _FileLock("categories", "modules"):
+        rows = read_categories()
+        target = next((r for r in rows if r["id"] == category_id), None)
+        if not target:
+            raise HTTPException(404, "category not found")
+        _check_category_perm(oid, target.get("scope"), target.get("ltc_id"))
+        if any(m.get("category_id") == category_id for m in read_modules()):
+            raise HTTPException(409, "category in use by modules")
+        write_categories([r for r in rows if r["id"] != category_id])
+    await _broadcast("config:reload", {"kind": "categories"})
+    return {"ok": True}
+
+
+@app.post("/api/ltc/{ltc_id}/init-from-template")
+async def api_init_ltc_from_template(ltc_id: str, request: Request):
+    """深拷贝 scope=ltc_template 的 category + module 到本 LTC 的 scope=ltc 副本。
+
+    详见 design/04 §5.5。语义:快照式,无反向指针,模板修改不下推副本。
+    """
+    oid = current_open_id(request)
+    if not is_ltc_admin(oid, ltc_id):
+        raise HTTPException(403, "forbidden")
+    if not any(l["id"] == ltc_id for l in read_ltcs()):
+        raise HTTPException(404, f"ltc_id {ltc_id} not found")
+    with _FileLock("modules", "categories"):
+        cats = read_categories()
+        mods = read_modules()
+        if any(c.get("scope") == "ltc" and c.get("ltc_id") == ltc_id for c in cats):
+            raise HTTPException(409, "ltc already has categories; clear them before re-init")
+        if any(m.get("scope") == "ltc" and m.get("ltc_id") == ltc_id for m in mods):
+            raise HTTPException(409, "ltc already has modules; clear them before re-init")
+        tpl_cats = [c for c in cats if c.get("scope") == "ltc_template"]
+        tpl_mods = [m for m in mods if m.get("scope") == "ltc_template"]
+        ts = now_iso()
+        id_map: dict[str, str] = {}
+        new_cats: list[dict] = []
+        for c in tpl_cats:
+            new_id = f"{c['id']}--{ltc_id}"
+            id_map[c["id"]] = new_id
+            row = copy.deepcopy(c)
+            row["id"] = new_id
+            row["scope"] = "ltc"
+            row["ltc_id"] = ltc_id
+            row["created_at"] = ts
+            row["updated_at"] = ts
+            row["created_by_open_id"] = oid
+            new_cats.append(row)
+        new_mods: list[dict] = []
+        for m in tpl_mods:
+            new_id = f"{m['id']}--{ltc_id}"
+            row = copy.deepcopy(m)
+            row["id"] = new_id
+            row["scope"] = "ltc"
+            row["ltc_id"] = ltc_id
+            old_cat = row.get("category_id")
+            row["category_id"] = id_map.get(old_cat) if old_cat else None
+            row["created_at"] = ts
+            row["updated_at"] = ts
+            row["created_by_open_id"] = oid
+            new_mods.append(row)
+        write_categories(cats + new_cats)
+        write_modules(mods + new_mods)
+    await _broadcast("config:reload", {"kind": "categories"})
+    await _broadcast("config:reload", {"kind": "modules"})
+    return {
+        "copied_categories": len(new_cats),
+        "copied_modules": len(new_mods),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -806,6 +1113,13 @@ async def api_create_module(request: Request):
     if not body.get("id") or not body.get("name") or not body.get("group"):
         raise HTTPException(422, "id/name/group required")
     _check_create_module_perm(oid, body)
+    cat_id = body.get("category_id") or None
+    if body["scope"] == "pdt" and cat_id:
+        raise HTTPException(422, "category_id must be null for scope=pdt")
+    if cat_id:
+        cat = next((c for c in read_categories() if c["id"] == cat_id), None)
+        if not cat:
+            raise HTTPException(422, f"category {cat_id} not found")
     with _FileLock("modules"):
         rows = read_modules()
         if any(r["id"] == body["id"] for r in rows):
@@ -815,6 +1129,7 @@ async def api_create_module(request: Request):
             "scope": body["scope"],
             "ltc_id": body["ltc_id"] if body["scope"] == "ltc" else None,
             "group": body["group"],
+            "category_id": cat_id,
             "name": body["name"],
             "order": body.get("order", len(rows) + 1),
             "owner_open_id": body.get("owner_open_id"),
@@ -822,6 +1137,7 @@ async def api_create_module(request: Request):
             "sub_items": _normalize_sub_items(body.get("sub_items", [])),
             "created_at": now_iso(),
             "updated_at": now_iso(),
+            "created_by_open_id": oid,
             "metadata": body.get("metadata", {}),
         }
         rows.append(row)
@@ -831,9 +1147,9 @@ async def api_create_module(request: Request):
 
 
 def _check_edit_module_perm(oid: str, module: dict) -> None:
-    if is_pdt_admin(oid):
+    """admin 越权;LTC 模块允许本 LTC Admin 改;否则只有创建者可改可删。"""
+    if can_edit_resource(oid, module):
         return
-    # ltc_template 模块属于 PDT 级配置,只有 PDT Admin 可改其定义
     if module.get("scope") == "ltc" and is_ltc_admin(oid, module.get("ltc_id")):
         return
     raise HTTPException(403, "forbidden")
@@ -849,6 +1165,13 @@ async def api_update_module(module_id: str, request: Request):
             if r["id"] != module_id:
                 continue
             _check_edit_module_perm(oid, r)
+            if "category_id" in body:
+                cat_id = body.get("category_id") or None
+                if r.get("scope") == "pdt" and cat_id:
+                    raise HTTPException(422, "category_id must be null for scope=pdt")
+                if cat_id and not any(c["id"] == cat_id for c in read_categories()):
+                    raise HTTPException(422, f"category {cat_id} not found")
+                r["category_id"] = cat_id
             for k in ("group", "name", "order", "owner_open_id", "kpi_fields", "metadata"):
                 if k in body:
                     r[k] = body[k]
@@ -907,11 +1230,16 @@ def _validate_status_entry(module: dict, entry: dict) -> None:
             raise HTTPException(422, f"sub_item {sid} not in module")
         if sc not in VALID_COLORS:
             raise HTTPException(422, f"invalid sub_items_color for {sid}")
-    # 子项级 risk 文本只校验 sid 存在性
+    # 子项级 risk 文本:键须存在;非绿子项必填风险文本
     sub_risks = entry.get("sub_items_risk", {}) or {}
     for sid in sub_risks:
         if sid not in valid_sub_ids:
             raise HTTPException(422, f"sub_item {sid} not in module (sub_items_risk)")
+    for sid, sc in sub_colors.items():
+        if sc != "green":
+            text = (sub_risks.get(sid) or "").strip()
+            if not text:
+                raise HTTPException(422, f"sub_items_risk required for non-green sub_item {sid}")
     # 新 KPI 兼容旧字段:kpi_items[] 优先,缺则用 kpi_values{}
     kpi_values = entry.get("kpi_values", {}) or {}
     valid_kpi_keys = {k["key"] for k in module.get("kpi_fields", [])}
@@ -922,11 +1250,7 @@ def _validate_status_entry(module: dict, entry: dict) -> None:
     for r in entry.get("risks") or []:
         if r.get("severity") not in VALID_SEVERITIES:
             raise HTTPException(422, "invalid risk severity")
-    # 风险说明必填规则:非全绿时必须有 risks 或 risk_note 任一
-    any_non_green = color != "green" or any(v != "green" for v in sub_colors.values())
-    has_risk = bool((entry.get("risks") or [])) or bool((entry.get("risk_note") or "").strip())
-    if any_non_green and not has_risk:
-        raise HTTPException(422, "risks or risk_note required when not all green")
+    # 风险列表允许为空(无论整体颜色如何)
 
 
 @app.get("/api/status")

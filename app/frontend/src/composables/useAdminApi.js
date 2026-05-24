@@ -6,6 +6,12 @@ import { api } from '../api/client.js'
 export const adminApi = {
   // PDT
   updatePdt: (body) => api.put('/api/pdt', body),
+  uploadPdtIcon: (file) => {
+    const fd = new FormData()
+    fd.append('file', file)
+    return api.postForm('/api/pdt/icon', fd)
+  },
+  deletePdtIcon: () => api.del('/api/pdt/icon'),
 
   // LTCs
   createLtc: (body) => api.post('/api/ltcs', body),
@@ -13,9 +19,29 @@ export const adminApi = {
   deleteLtc: (id) => api.del(`/api/ltcs/${id}`),
 
   // Modules
+  listModules: (params = {}) => {
+    const qs = new URLSearchParams()
+    if (params.scope) qs.set('scope', params.scope)
+    if (params.ltc_id) qs.set('ltc_id', params.ltc_id)
+    const q = qs.toString()
+    return api.get(`/api/modules${q ? `?${q}` : ''}`)
+  },
   createModule: (body) => api.post('/api/modules', body),
   updateModule: (id, body) => api.put(`/api/modules/${id}`, body),
   deleteModule: (id) => api.del(`/api/modules/${id}`),
+
+  // Categories
+  listCategories: (params = {}) => {
+    const qs = new URLSearchParams()
+    if (params.scope) qs.set('scope', params.scope)
+    if (params.ltc_id) qs.set('ltc_id', params.ltc_id)
+    const q = qs.toString()
+    return api.get(`/api/categories${q ? `?${q}` : ''}`)
+  },
+  createCategory: (body) => api.post('/api/categories', body),
+  updateCategory: (id, body) => api.put(`/api/categories/${id}`, body),
+  deleteCategory: (id) => api.del(`/api/categories/${id}`),
+  initLtcFromTemplate: (ltcId) => api.post(`/api/ltc/${ltcId}/init-from-template`),
 
   // Admins
   getAdmins: () => api.get('/api/admins'),

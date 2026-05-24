@@ -1,0 +1,68 @@
+[
+  {
+    "id": "cat-tpl-perception",
+    "name": "感知",
+    "owner_open_id": null,
+    "order": 1,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "cat-tpl-pnc",
+    "name": "规控",
+    "owner_open_id": null,
+    "order": 2,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "cat-tpl-hmi-sm",
+    "name": "HMI / 状态机",
+    "owner_open_id": null,
+    "order": 3,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "cat-tpl-infra",
+    "name": "基建",
+    "owner_open_id": null,
+    "order": 4,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "cat-tpl-safety",
+    "name": "安全",
+    "owner_open_id": null,
+    "order": 5,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  },
+  {
+    "id": "cat-tpl-tools",
+    "name": "工具与交付",
+    "owner_open_id": null,
+    "order": 6,
+    "scope": "ltc_template",
+    "ltc_id": null,
+    "created_at": "2026-05-24T00:00:00+08:00",
+    "updated_at": "2026-05-24T00:00:00+08:00",
+    "metadata": {}
+  }
+]

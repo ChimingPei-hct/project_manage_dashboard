@@ -10,6 +10,7 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': { target: BACKEND, changeOrigin: true, ws: true },
+      '/assets': { target: BACKEND, changeOrigin: true },
     },
   },
 })

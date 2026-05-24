@@ -88,6 +88,14 @@
 - 缺失的子项视为未填报(前端显示"灰底问号"或与 `module_color` 同色,详见 `13`)
 - 任意值必须是 `"green"`/`"yellow"`/`"red"`
 
+### 5.3b `sub_items_risk`
+
+- 可空对象;键 = `modules[id].sub_items[].id`,值为字符串(0–500 字符)
+- 仅记录子项级别的风险描述;模块级 `risk_note` 仍单独存在(两者互不替代)
+- **必填条件**(后端校验,违反返 422):若 `sub_items_color[sid] != "green"`,则 `sub_items_risk[sid]` 必填(非空字符串)。子项标绿时本字段可缺省/空
+- 后端 `_validate_status_entry()` 中实施;前端 `SubItemEditDialog.vue` 内同步做兜底校验,非绿态文本框为空时禁用保存按钮
+- 删除子项时,对应 `sub_items_risk[sid]` 同步清理
+
 ### 5.4 `kpi_values`
 
 - 可空对象;键 = `modules[id].kpi_fields[].key`

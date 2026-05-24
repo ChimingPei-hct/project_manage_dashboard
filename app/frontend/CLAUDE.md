@@ -21,8 +21,9 @@
 - ❌ 跳过 `v-tooltip` 直接 `title=""`(`title` 仅作长说明兜底)
 - ❌ 在组件内直接 `fetch`(走 `api/client.js`)
 - ❌ 给"未填报"赋绿/黄/红色(用灰)
-- ❌ 在多处页面内嵌写**看板卡片**渲染 — 必须 import `ModuleCardGrid.vue`(唯一实现)
-- ❌ 在多处页面内嵌写**风险任务卡片**渲染 — 必须 import `ModuleRiskList.vue`(唯一实现)
+- ❌ PDT 看板/风险页内嵌写卡片渲染 — 必须 import `ModuleCardGrid.vue` / `ModuleRiskList.vue`(PDT 唯一实现)
+- ❌ LTC 看板/风险页内嵌写卡片渲染 — 必须 import `ltc/LtcCategoryGrid.vue`(LTC 唯一实现,内部封装看板/风险/子项编辑)
+- ❌ PDT 页 import LTC 卡片组件,或 LTC 页 import PDT 卡片组件(两者解耦,详见根 CLAUDE.md "看板卡片解耦约束")
 
 ## 新增可交互元素强制流程
 

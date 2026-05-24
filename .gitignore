@@ -36,3 +36,5 @@ app/frontend.log
 
 # 本地测试/截图缓存(playwright、调试图、临时输出统一落此)
 .cache/
+global_skills
+design/module_updates.jsonl

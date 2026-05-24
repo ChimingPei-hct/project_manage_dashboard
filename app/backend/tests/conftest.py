@@ -22,11 +22,14 @@ PDT_ADMIN_OID = "ou_pdt_001"
 LTC_ADMIN_THIS_OID = "ou_ltc_this"
 LTC_ADMIN_OTHER_OID = "ou_ltc_other"
 OWNER_THIS_OID = "ou_owner_this"
+CREATOR_OID = "ou_creator_this"
 GUEST_OID = "ou_guest_001"
 
 SAMPLE_LTC_ID = "ltc-this"
 OTHER_LTC_ID = "ltc-other"
+CREATOR_LTC_ID = "ltc-creator"
 SAMPLE_MODULE_ID = "mod-this"
+CREATOR_MODULE_ID = "mod-creator"
 
 
 def _seed_data_dir(d: Path) -> None:
@@ -41,6 +44,9 @@ def _seed_data_dir(d: Path) -> None:
          "created_at": "2026-05-22T00:00:00+08:00", "updated_at": "2026-05-22T00:00:00+08:00", "metadata": {}},
         {"id": OTHER_LTC_ID, "name": "Other LTC", "order": 2, "archived": False,
          "created_at": "2026-05-22T00:00:00+08:00", "updated_at": "2026-05-22T00:00:00+08:00", "metadata": {}},
+        {"id": CREATOR_LTC_ID, "name": "Creator LTC", "order": 3, "archived": False,
+         "created_at": "2026-05-22T00:00:00+08:00", "updated_at": "2026-05-22T00:00:00+08:00",
+         "created_by_open_id": CREATOR_OID, "metadata": {}},
     ]), encoding="utf-8")
     (d / "modules.json").write_text(json.dumps([
         {
@@ -50,6 +56,16 @@ def _seed_data_dir(d: Path) -> None:
             "kpi_fields": [], "sub_items": [],
             "created_at": "2026-05-22T00:00:00+08:00",
             "updated_at": "2026-05-22T00:00:00+08:00",
+            "metadata": {},
+        },
+        {
+            "id": CREATOR_MODULE_ID, "scope": "pdt", "ltc_id": None,
+            "group": "G1", "name": "Creator Module", "order": 2,
+            "owner_open_id": None,
+            "kpi_fields": [], "sub_items": [],
+            "created_at": "2026-05-22T00:00:00+08:00",
+            "updated_at": "2026-05-22T00:00:00+08:00",
+            "created_by_open_id": CREATOR_OID,
             "metadata": {},
         }
     ]), encoding="utf-8")
@@ -119,6 +135,14 @@ def as_ltc_admin_other(client):
 def as_owner_this(client):
     c, m = client
     c.cookies.update(_login_cookie(m, OWNER_THIS_OID))
+    return c
+
+
+@pytest.fixture
+def as_creator_this(client):
+    """非 admin 用户,但是 CREATOR_MODULE_ID / CREATOR_LTC_ID 的创建者。"""
+    c, m = client
+    c.cookies.update(_login_cookie(m, CREATOR_OID))
     return c
 
 
