@@ -713,32 +713,34 @@ def _normalize_sub_items(raw: list | None) -> list[dict]:
 
 
 def _normalize_kpi_items(raw) -> list[dict]:
-    """KPI 结构化数组 [{label, value, target?}]。空字符串值过滤。"""
+    """KPI 结构化数组 [{goal, actual, color}]。
+
+    新字段: goal(目标自由文本)/ actual(现状自由文本)/ color(组级灯)。
+    读侧兼容(过渡期): kpi_values{} → goal=key, actual=value;
+    kpi_items 旧字段 label/value 透明映射为 goal/actual;target 字段一律丢弃。
+    goal 与 actual 都为空字符串的元素丢弃。
+    """
     out: list[dict] = []
     if not raw:
         return out
     if isinstance(raw, dict):
         # 兼容旧 kpi_values: {key: value}
         for k, v in raw.items():
-            if not k:
+            if not k and not v:
                 continue
-            out.append({"label": str(k), "value": str(v or ""), "target": ""})
+            out.append({"goal": str(k or ""), "actual": str(v or ""), "color": ""})
         return out
     for item in raw:
         if not isinstance(item, dict):
             continue
-        label = (item.get("label") or "").strip()
-        if not label:
+        goal = str(item.get("goal") or item.get("label") or "").strip()
+        actual = str(item.get("actual") or item.get("value") or "").strip()
+        if not goal and not actual:
             continue
         color = item.get("color")
         if color not in VALID_COLORS:
             color = ""
-        out.append({
-            "label": label,
-            "value": str(item.get("value") or "").strip(),
-            "target": str(item.get("target") or "").strip(),
-            "color": color,
-        })
+        out.append({"goal": goal, "actual": actual, "color": color})
     return out
 
 
@@ -1214,6 +1216,19 @@ def _migrate_data_once() -> None:
                 if "kpi_items" not in entry:
                     entry["kpi_items"] = _normalize_kpi_items(entry.get("kpi_values"))
                     dirty = True
+                else:
+                    # 把旧字段 label/value/target 透明迁移到 goal/actual(幂等)
+                    items = entry.get("kpi_items") or []
+                    needs_migrate = any(
+                        isinstance(it, dict) and (
+                            "label" in it or "value" in it or "target" in it
+                            or ("goal" not in it and "actual" not in it)
+                        )
+                        for it in items
+                    )
+                    if needs_migrate:
+                        entry["kpi_items"] = _normalize_kpi_items(items)
+                        dirty = True
                 if "risks" not in entry:
                     entry["risks"] = _normalize_risks(None, fallback_text=entry.get("risk_note") or "")
                     dirty = True

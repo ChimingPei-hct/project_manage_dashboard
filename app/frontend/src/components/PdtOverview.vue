@@ -7,8 +7,9 @@ import { useContactCache } from '../composables/useContactCache.js'
 import TimelineBar from './TimelineBar.vue'
 import ModuleCardGrid from './ModuleCardGrid.vue'
 import Modal from './harness/Modal.vue'
-import PdtBaseDrawer from './admin/PdtBaseDrawer.vue'
 import MilestonesDrawer from './admin/MilestonesDrawer.vue'
+import OverviewCardsDrawer from './admin/OverviewCardsDrawer.vue'
+import ModuleDrawer from './admin/ModuleDrawer.vue'
 import AdminUsers from './admin/AdminUsers.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
 
@@ -47,9 +48,13 @@ const cards = computed(() => {
   })).sort((a, b) => a.order - b.order)
 })
 
-const showAdminTool = ref('') // '' | 'pdt-base' | 'people' | 'snapshots'
+const showAdminTool = ref('') // '' | 'milestones' | 'overview' | 'people' | 'snapshots'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
+
+const editingModuleId = ref('')
+function pickModule(id) { editingModuleId.value = id }
+function closeModuleDrawer() { editingModuleId.value = '' }
 
 const { current, pushView } = useView()
 const sub = computed(() => current.value.sub || 'timeline')
@@ -58,31 +63,6 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
 
 <template>
   <div class="pdt-overview">
-    <div class="head">
-      <div v-if="canEnterPdtAdmin && !isReadonly" class="admin-tools">
-        <button
-          class="tool-btn"
-          v-tooltip="'编辑 PDT 名称、SOP 等基础信息'"
-          @click="openAdminTool('pdt-base')"
-        >⚙ PDT 基础</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'编辑里程碑(甘特图数据源)'"
-          @click="openAdminTool('milestones')"
-        >🗓 里程碑</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'管理 PDT/LTC Admin 与 Owner 绑定'"
-          @click="openAdminTool('people')"
-        >👥 人员</button>
-        <button
-          class="tool-btn"
-          v-tooltip="'查看历史周快照与定时冻结'"
-          @click="openAdminTool('snapshots')"
-        >📸 快照</button>
-      </div>
-    </div>
-
     <nav class="sub-tabs">
       <button
         :class="{ primary: sub === 'timeline' }"
@@ -94,6 +74,28 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
         v-tooltip="'查看 PDT 模块卡片看板'"
         @click="switchSub('kanban')"
       >全局看板</button>
+      <div v-if="canEnterPdtAdmin && !isReadonly" class="admin-tools">
+        <button
+          class="tool-btn"
+          v-tooltip="'编辑里程碑(甘特图数据源)'"
+          @click="openAdminTool('milestones')"
+        >🗓 里程碑</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'管理 PDT 总览卡片(新增 / 排序 / 进入模块详情)'"
+          @click="openAdminTool('overview')"
+        >🧩 总览卡片</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'管理 PDT/LTC Admin 与 Owner 绑定'"
+          @click="openAdminTool('people')"
+        >👥 人员</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'查看历史周快照与定时冻结'"
+          @click="openAdminTool('snapshots')"
+        >📸 快照</button>
+      </div>
     </nav>
 
     <TimelineBar v-if="sub === 'timeline'" :milestones="pdt?.milestones || []" />
@@ -106,11 +108,11 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
       empty-hint="暂无 PDT 级总览卡片,请管理员添加。"
     />
 
-    <Modal :open="showAdminTool === 'pdt-base'" title="PDT 基础信息" width="640px" @close="closeAdminTool">
-      <PdtBaseDrawer />
-    </Modal>
     <Modal :open="showAdminTool === 'milestones'" title="里程碑编辑" width="960px" @close="closeAdminTool">
       <MilestonesDrawer />
+    </Modal>
+    <Modal :open="showAdminTool === 'overview'" title="PDT 总览卡片" width="880px" @close="closeAdminTool">
+      <OverviewCardsDrawer @pick-module="pickModule" />
     </Modal>
     <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
       <AdminUsers />
@@ -118,20 +120,15 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
     </Modal>
+    <Modal :open="!!editingModuleId" title="模块详情" width="880px" @close="closeModuleDrawer">
+      <ModuleDrawer v-if="editingModuleId" :key="editingModuleId" :module-id="editingModuleId" @deleted="closeModuleDrawer" />
+    </Modal>
   </div>
 </template>
 
 <style scoped>
 .pdt-overview { padding: 18px 0 32px; }
-.head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  padding: 0 24px 14px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.admin-tools { display: flex; gap: 6px; }
+.admin-tools { display: flex; gap: 6px; margin-left: auto; }
 .admin-tools .tool-btn {
   font-size: 12px;
   padding: 4px 10px;

@@ -120,27 +120,26 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 
       <div class="kpis-block">
         <div class="section-label">
-          <span class="sl-en">KPI</span>
           <span class="sl-cn">关键指标</span>
         </div>
-        <table v-if="kpisOf(card).length" class="kpis">
-          <tbody>
-            <tr v-for="(kpi, i) in kpisOf(card)" :key="i">
-              <td class="k-name">{{ kpi.label }}</td>
-              <td class="k-value">{{ kpi.value || '—' }}</td>
-              <td class="k-target">{{ kpi.target || '' }}</td>
-              <td class="k-light">
-                <span v-if="kpi.color" class="kpi-dot" :class="`tone-${kpi.color}`" :title="kpi.color"></span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="kpisOf(card).length" class="kpi-groups">
+          <div v-for="(kpi, i) in kpisOf(card)" :key="i" class="kpi-group">
+            <div class="kpi-row goal">
+              <span class="kr-label">目标</span>
+              <span class="kr-text">{{ kpi.goal || '—' }}</span>
+            </div>
+            <div class="kpi-row actual">
+              <span class="kr-label">现状</span>
+              <span class="kr-text">{{ kpi.actual || '—' }}</span>
+              <span v-if="kpi.color" class="kpi-dot" :class="`tone-${kpi.color}`" :title="kpi.color"></span>
+            </div>
+          </div>
+        </div>
         <div v-else class="section-empty">— 暂无 —</div>
       </div>
 
       <div class="risks-block">
         <div class="section-label">
-          <span class="sl-en">ISSUES · {{ risksFor(card).length }}</span>
           <span class="sl-cn">重点问题</span>
         </div>
         <ul v-if="risksFor(card).length" class="risks">
@@ -277,11 +276,6 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 2px;
 }
-.sl-en {
-  font-size: 10px; letter-spacing: 3px;
-  color: var(--text-dim); font-weight: 600;
-  text-transform: uppercase;
-}
 .sl-cn {
   font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
   letter-spacing: 4px; font-size: 12px; color: var(--text-muted);
@@ -292,24 +286,33 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
   font-style: italic; padding: 2px 0;
 }
 
-.kpis { width: 100%; border-collapse: collapse; font-size: 13px; }
-.kpis td {
+.kpi-groups { display: flex; flex-direction: column; }
+.kpi-group {
   padding: 6px 0;
-  border-bottom: 1px dotted var(--border-subtle);
-  vertical-align: baseline;
+  border-bottom: 1px dashed var(--border-subtle);
 }
-.kpis tr:last-child td { border-bottom: 0; }
-.k-name  { color: var(--text-muted); }
-.k-value {
-  text-align: right; font-weight: 600; font-size: 16px;
-  color: var(--text); font-variant-numeric: tabular-nums;
-  white-space: nowrap; width: 72px;
+.kpi-group:last-child { border-bottom: 0; }
+.kpi-row {
+  display: flex; align-items: baseline; gap: 8px;
+  font-size: 13px; line-height: 1.55;
 }
-.k-target {
-  text-align: right; font-size: 11px; color: var(--text-dim);
-  font-variant-numeric: tabular-nums; white-space: nowrap; width: 56px;
+.kpi-row .kr-label {
+  flex: 0 0 28px;
+  font-size: 11px; letter-spacing: 2px;
+  color: var(--text-dim);
 }
-.k-light { width: 14px; text-align: right; padding-left: 6px; }
+.kpi-row .kr-text {
+  flex: 1 1 auto;
+  white-space: pre-wrap; word-break: break-word;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-row.goal .kr-text {
+  color: var(--text-muted);
+}
+.kpi-row.actual .kr-text {
+  color: var(--text); font-weight: 600;
+}
+.kpi-row.actual .kpi-dot { margin-left: auto; flex: 0 0 auto; }
 .kpi-dot {
   display: inline-block;
   width: 8px; height: 8px;

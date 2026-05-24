@@ -104,7 +104,7 @@ const riskMissing = computed(() => anyNonGreen.value && !hasRiskText.value)
 /* === 编辑操作 === */
 function pickModuleColor(c) { moduleColor.value = c }
 function pickSubColor(sid, c) { subColors.value = { ...subColors.value, [sid]: c } }
-function addKpi() { kpiItems.value.push({ label: '', value: '', target: '', color: '' }) }
+function addKpi() { kpiItems.value.push({ goal: '', actual: '', color: '' }) }
 function removeKpi(i) { kpiItems.value.splice(i, 1) }
 function addRisk() { risks.value.push({ severity: 'red', text: '' }) }
 function removeRisk(i) { risks.value.splice(i, 1) }
@@ -148,12 +148,11 @@ async function save() {
     /* 1) status */
     const cleanKpi = kpiItems.value
       .map(k => ({
-        label: (k.label || '').trim(),
-        value: (k.value || '').trim(),
-        target: (k.target || '').trim(),
+        goal: (k.goal || '').trim(),
+        actual: (k.actual || '').trim(),
         color: COLORS.includes(k.color) && k.color !== 'gray' ? k.color : '',
       }))
-      .filter(k => k.label || k.value)
+      .filter(k => k.goal || k.actual)
     const cleanRisks = risks.value
       .map(r => ({ severity: r.severity || 'red', text: (r.text || '').trim() }))
       .filter(r => r.text)
@@ -334,26 +333,26 @@ const deleteBody = computed(() => {
         </div>
       </section>
 
-      <!-- Block 2:KPI -->
+      <!-- Block 2:关键指标 -->
       <section v-if="mode === 'edit'" class="block">
         <div class="block-title">
-          <span>KPI</span>
+          <span>关键指标</span>
           <button
             v-if="canEditStructure"
             class="mini-add"
-            v-tooltip="'新增一行 KPI(目标说明 / 现状 / 灯)'"
+            v-tooltip="'新增一组指标(目标 / 现状 / 灯)'"
             @click="addKpi"
           >+ 行</button>
         </div>
-        <div v-if="!kpiItems.length" class="hint">暂无 KPI</div>
+        <div v-if="!kpiItems.length" class="hint">暂无指标</div>
         <div v-else class="kpi-table">
           <div class="kpi-row head">
-            <span>目标说明</span><span>现状</span><span>灯</span><span></span>
+            <span>目标</span><span>现状</span><span>灯</span><span></span>
           </div>
           <div v-for="(k, i) in kpiItems" :key="i" class="kpi-row">
-            <input v-model="k.label" placeholder="如:CPU 占用率 ≤70%" v-tooltip="'本行 KPI 要达到什么目的'" />
-            <input v-model="k.value" placeholder="如:78" v-tooltip="'本周/当前的现状数值'" />
-            <select v-model="k.color" v-tooltip="'本行 KPI 的当前红绿灯'">
+            <textarea v-model="k.goal" rows="2" placeholder="如:CPU 占用率 ≤70%" v-tooltip="'本组指标的目标(应该是什么)'"></textarea>
+            <textarea v-model="k.actual" rows="2" placeholder="如:78%" v-tooltip="'本组指标的现状(实际是什么)'"></textarea>
+            <select v-model="k.color" v-tooltip="'本组指标的当前红绿灯'">
               <option value="">—</option>
               <option value="green">🟢 绿/达成</option>
               <option value="yellow">🟡 黄/略差</option>
@@ -362,7 +361,7 @@ const deleteBody = computed(() => {
             <button
               v-if="canEditStructure"
               class="mini-del"
-              v-tooltip="'删除该行 KPI'"
+              v-tooltip="'删除该组指标'"
               @click="removeKpi(i)"
             >✕</button>
             <span v-else></span>
@@ -503,9 +502,12 @@ h3 { margin: 0; font-size: 16px; font-weight: 700; }
 .mini-del:hover { color: var(--status-red); border-color: var(--status-red); }
 
 .kpi-table { display: flex; flex-direction: column; gap: 4px; }
-.kpi-row { display: grid; grid-template-columns: 1.6fr 1fr 110px 28px; gap: 6px; align-items: center; }
-.kpi-row.head { font-size: 11px; color: var(--text-dim); padding: 0 4px; }
+.kpi-row { display: grid; grid-template-columns: 1.4fr 1fr 110px 28px; gap: 6px; align-items: stretch; }
+.kpi-row.head { font-size: 11px; color: var(--text-dim); padding: 0 4px; align-items: center; }
 .kpi-row input, .kpi-row select { font-size: 12.5px; padding: 4px 8px; }
+.kpi-row textarea { font-size: 12.5px; padding: 6px 8px; resize: vertical; min-height: 40px; font-family: inherit; }
+.kpi-row select { align-self: start; }
+.kpi-row .mini-del { align-self: start; }
 
 .risk-list { display: flex; flex-direction: column; gap: 6px; }
 .risk-row { display: grid; grid-template-columns: 1fr 28px; gap: 6px; align-items: stretch; padding: 6px; border-radius: var(--radius); background: var(--status-red-bg); }

@@ -97,12 +97,12 @@
 ### 5.4b `kpi_items`(新结构化数组,优先于 `kpi_values`)
 
 - 数组,元素为对象,字段:
-  - `label`(string,必填,即"目标说明",示例 `"CPU 占用率 ≤70%"`)
-  - `value`(string,可空,即"现状",示例 `"78"`)
-  - `target`(string,可空,旧字段,新 UI 不暴露,保留兼容)
-  - `color`(string,可空,枚举 `"green"`/`"yellow"`/`"red"` 或 `""` 空字符串;**行级红绿灯**,由 Owner/PDT Admin 在编辑弹窗下拉选择;为空表示未标灯)
-- 后端 `_normalize_kpi_items()` 仅保留上述四字段,其它字段静默丢弃
-- 前端 `useStatusHelpers.kpiItemsOf()` 返回项保证有 `color` 字段(老数据回填 `""`)
+  - `goal`(string,可空,**目标**描述,自由文本,示例 `"CPU 占用率 ≤70%"`)
+  - `actual`(string,可空,**现状**描述,自由文本,示例 `"78%"`)
+  - `color`(string,可空,枚举 `"green"`/`"yellow"`/`"red"` 或 `""`;**组级红绿灯**,挂在该组现状一侧,由 Owner/PDT Admin 在编辑弹窗下拉选择;为空表示未标灯)
+- 写入语义:`goal` 与 `actual` 同时为空字符串的元素由后端 `_normalize_kpi_items()` 丢弃;其余只保留上述三字段
+- 读侧兼容(过渡期):若元素含旧字段 `label/value` 而无 `goal/actual`,后端读时透明映射 `label→goal` / `value→actual`,`target` 字段一律丢弃。该兼容片段标注"过渡期",待 data 分支迁移完成后删除
+- 前端 `useStatusHelpers.kpiItemsOf()` 返回项保证含 `goal/actual/color` 三字段(缺失字段回填 `""`),同时具备同一份读侧兼容映射
 
 ### 5.5 `risk_note`
 

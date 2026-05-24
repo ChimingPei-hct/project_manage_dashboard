@@ -7,7 +7,7 @@ import { useAdmins } from './composables/useAdmins.js'
 import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogin.js'
 import PdtOverview from './components/PdtOverview.vue'
 import LtcMain from './components/LtcMain.vue'
-import AdminPanel from './components/AdminPanel.vue'
+import PdtNameDialog from './components/PdtNameDialog.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
 const { pdt, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
@@ -33,11 +33,12 @@ const viewComp = computed(() => {
   switch (current.value.view) {
     case 'ltc': return LtcMain
     case 'risks': return LtcMain  // 同一组件,内部按 current.view 决定是否滚到风险锚点
-    case 'admin': return AdminPanel
     case 'pdt':
     default: return PdtOverview
   }
 })
+
+const pdtNameOpen = ref(false)
 
 const navItems = computed(() => [
   { view: 'pdt', label: 'PDT 总览', tip: '切换到产品线总览页' },
@@ -114,10 +115,10 @@ onMounted(async () => {
         <button
           v-if="isAdminish"
           class="icon-btn"
-          :class="{ active: current.view === 'admin' }"
-          v-tooltip="'管理 PDT / LTC / 模块 / 人员'"
-          @click="nav('admin')"
-          aria-label="管理"
+          :class="{ active: pdtNameOpen }"
+          v-tooltip="'编辑 PDT 名称(左上角品牌)'"
+          @click="pdtNameOpen = true"
+          aria-label="编辑 PDT 名称"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
@@ -129,6 +130,7 @@ onMounted(async () => {
     <main>
       <component :is="viewComp" />
     </main>
+    <PdtNameDialog :open="pdtNameOpen" @close="pdtNameOpen = false" />
   </div>
 </template>
 

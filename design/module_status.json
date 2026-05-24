@@ -31,19 +31,19 @@
     ],
     "kpi_items": [
       {
-        "label": "cpu_util",
-        "value": "78",
-        "target": ""
+        "goal": "cpu_util",
+        "actual": "78",
+        "color": ""
       },
       {
-        "label": "fps_perception",
-        "value": "27.5",
-        "target": ""
+        "goal": "fps_perception",
+        "actual": "27.5",
+        "color": ""
       },
       {
-        "label": "delay_e2e",
-        "value": "138",
-        "target": ""
+        "goal": "delay_e2e",
+        "actual": "138",
+        "color": ""
       }
     ],
     "sub_items_risk": {}
@@ -64,14 +64,14 @@
     },
     "kpi_items": [
       {
-        "label": "build_pass",
-        "value": "99.2",
-        "target": ""
+        "goal": "build_pass",
+        "actual": "99.2",
+        "color": ""
       },
       {
-        "label": "ci_duration",
-        "value": "21",
-        "target": ""
+        "goal": "ci_duration",
+        "actual": "21",
+        "color": ""
       }
     ],
     "risks": [],
@@ -109,19 +109,19 @@
     ],
     "kpi_items": [
       {
-        "label": "coverage",
-        "value": "54",
-        "target": ""
+        "goal": "coverage",
+        "actual": "54",
+        "color": ""
       },
       {
-        "label": "ut_pass",
-        "value": "92.8",
-        "target": ""
+        "goal": "ut_pass",
+        "actual": "92.8",
+        "color": ""
       },
       {
-        "label": "failing",
-        "value": "37",
-        "target": ""
+        "goal": "failing",
+        "actual": "37",
+        "color": ""
       }
     ],
     "sub_items_risk": {}
@@ -158,14 +158,14 @@
     ],
     "kpi_items": [
       {
-        "label": "migrated_pkgs",
-        "value": "28",
-        "target": ""
+        "goal": "migrated_pkgs",
+        "actual": "28",
+        "color": ""
       },
       {
-        "label": "blockers",
-        "value": "3",
-        "target": ""
+        "goal": "blockers",
+        "actual": "3",
+        "color": ""
       }
     ],
     "sub_items_risk": {}
@@ -181,14 +181,14 @@
     },
     "kpi_items": [
       {
-        "label": "infer_latency",
-        "value": "32",
-        "target": ""
+        "goal": "infer_latency",
+        "actual": "32",
+        "color": ""
       },
       {
-        "label": "throughput",
-        "value": "135",
-        "target": ""
+        "goal": "throughput",
+        "actual": "135",
+        "color": ""
       }
     ],
     "risks": [],
@@ -208,14 +208,14 @@
     },
     "kpi_items": [
       {
-        "label": "obj_recall",
-        "value": "96.4",
-        "target": ""
+        "goal": "obj_recall",
+        "actual": "96.4",
+        "color": ""
       },
       {
-        "label": "lane_acc",
-        "value": "97.1",
-        "target": ""
+        "goal": "lane_acc",
+        "actual": "97.1",
+        "color": ""
       }
     ],
     "risks": [],
@@ -252,14 +252,14 @@
     ],
     "kpi_items": [
       {
-        "label": "integration_pass",
-        "value": "73",
-        "target": ""
+        "goal": "integration_pass",
+        "actual": "73",
+        "color": ""
       },
       {
-        "label": "open_bugs",
-        "value": "26",
-        "target": ""
+        "goal": "open_bugs",
+        "actual": "26",
+        "color": ""
       }
     ],
     "sub_items_risk": {}
@@ -286,14 +286,14 @@
     ],
     "kpi_items": [
       {
-        "label": "daily_upload_gb",
-        "value": "612",
-        "target": ""
+        "goal": "daily_upload_gb",
+        "actual": "612",
+        "color": ""
       },
       {
-        "label": "loss_rate",
-        "value": "1.8",
-        "target": ""
+        "goal": "loss_rate",
+        "actual": "1.8",
+        "color": ""
       }
     ],
     "sub_items_risk": {}
@@ -309,14 +309,14 @@
     },
     "kpi_items": [
       {
-        "label": "auto_rate",
-        "value": "82",
-        "target": ""
+        "goal": "auto_rate",
+        "actual": "82",
+        "color": ""
       },
       {
-        "label": "manual_saved",
-        "value": "46",
-        "target": ""
+        "goal": "manual_saved",
+        "actual": "46",
+        "color": ""
       }
     ],
     "risks": [],
@@ -333,14 +333,14 @@
     },
     "kpi_items": [
       {
-        "label": "mileage",
-        "value": "3260",
-        "target": ""
+        "goal": "mileage",
+        "actual": "3260",
+        "color": ""
       },
       {
-        "label": "scene_cov",
-        "value": "88",
-        "target": ""
+        "goal": "scene_cov",
+        "actual": "88",
+        "color": ""
       }
     ],
     "risks": [],
@@ -365,14 +365,14 @@
     },
     "kpi_items": [
       {
-        "label": "calib_pass",
-        "value": "99.1",
-        "target": ""
+        "goal": "calib_pass",
+        "actual": "99.1",
+        "color": ""
       },
       {
-        "label": "vehicles",
-        "value": "47",
-        "target": ""
+        "goal": "vehicles",
+        "actual": "47",
+        "color": ""
       }
     ],
     "risks": [],
@@ -393,14 +393,14 @@
     },
     "kpi_items": [
       {
-        "label": "scene_total",
-        "value": "5240",
-        "target": ""
+        "goal": "scene_total",
+        "actual": "5240",
+        "color": ""
       },
       {
-        "label": "weekly_runs",
-        "value": "238",
-        "target": ""
+        "goal": "weekly_runs",
+        "actual": "238",
+        "color": ""
       }
     ],
     "risks": [],
@@ -418,19 +418,19 @@
     },
     "kpi_items": [
       {
-        "label": "hr_fill",
-        "value": "72.6",
-        "target": ""
+        "goal": "hr_fill",
+        "actual": "72.6",
+        "color": ""
       },
       {
-        "label": "budget_use",
-        "value": "27",
-        "target": ""
+        "goal": "budget_use",
+        "actual": "27",
+        "color": ""
       },
       {
-        "label": "chip_ship",
-        "value": "5.14",
-        "target": ""
+        "goal": "chip_ship",
+        "actual": "5.14",
+        "color": ""
       }
     ],
     "risks": [],

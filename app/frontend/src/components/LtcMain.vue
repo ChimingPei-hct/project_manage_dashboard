@@ -12,6 +12,7 @@ import ModuleCardGrid from './ModuleCardGrid.vue'
 import ModuleRiskList from './ModuleRiskList.vue'
 import Modal from './harness/Modal.vue'
 import LtcDrawer from './admin/LtcDrawer.vue'
+import ModuleDrawer from './admin/ModuleDrawer.vue'
 import AdminUsers from './admin/AdminUsers.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
 
@@ -73,6 +74,10 @@ watch(() => [current.value.view, currentLtcId.value], () => { maybeScrollToRisk(
 const showAdminTool = ref('') // '' | 'ltc-base' | 'people' | 'snapshots'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
+
+const editingModuleId = ref('')
+function pickModule(id) { editingModuleId.value = id }
+function closeModuleDrawer() { editingModuleId.value = '' }
 </script>
 
 <template>
@@ -97,9 +102,9 @@ function closeAdminTool() { showAdminTool.value = '' }
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
               class="tool-btn"
-              v-tooltip="'编辑本 LTC 基础信息与里程碑'"
+              v-tooltip="'编辑本 LTC 基础信息、里程碑与模块清单'"
               @click="openAdminTool('ltc-base')"
-            >⚙ LTC 基础</button>
+            >⚙ LTC 配置</button>
             <button
               class="tool-btn"
               v-tooltip="'管理人员与角色绑定(全局)'"
@@ -139,14 +144,22 @@ function closeAdminTool() { showAdminTool.value = '' }
       </section>
     </div>
 
-    <Modal :open="showAdminTool === 'ltc-base'" :title="`LTC 基础 · ${currentLtc?.name || ''}`" width="720px" @close="closeAdminTool">
-      <LtcDrawer v-if="currentLtcId" :ltc-id="currentLtcId" @deleted="closeAdminTool" />
+    <Modal :open="showAdminTool === 'ltc-base'" :title="`LTC 配置 · ${currentLtc?.name || ''}`" width="720px" @close="closeAdminTool">
+      <LtcDrawer
+        v-if="currentLtcId"
+        :ltc-id="currentLtcId"
+        @pick-module="pickModule"
+        @deleted="closeAdminTool"
+      />
     </Modal>
     <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
       <AdminUsers />
     </Modal>
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
+    </Modal>
+    <Modal :open="!!editingModuleId" title="模块详情" width="880px" @close="closeModuleDrawer">
+      <ModuleDrawer v-if="editingModuleId" :key="editingModuleId" :module-id="editingModuleId" @deleted="closeModuleDrawer" />
     </Modal>
   </div>
 </template>

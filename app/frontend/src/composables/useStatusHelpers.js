@@ -1,28 +1,26 @@
 /* 状态数据归一化辅助:兼容新旧 schema。
-   - 新:status.kpi_items[] / status.risks[] / status.sub_items_risk{}
-   - 旧:status.kpi_values{} / status.risk_note (string)
+   - 新:status.kpi_items[] = [{goal, actual, color}] / status.risks[] / status.sub_items_risk{}
+   - 旧:status.kpi_items[] 的 {label, value, target} / status.kpi_values{} / status.risk_note (string)
 */
 
 export function kpiItemsOf(statusEntry, kpiFields) {
   if (!statusEntry) return []
   if (Array.isArray(statusEntry.kpi_items) && statusEntry.kpi_items.length) {
     return statusEntry.kpi_items.map(k => ({
-      label: k.label || '',
-      value: k.value || '',
-      target: k.target || '',
+      goal: (k.goal ?? k.label ?? '') + '',
+      actual: (k.actual ?? k.value ?? '') + '',
       color: k.color || '',
-    }))
+    })).filter(k => k.goal || k.actual)
   }
   const vals = statusEntry.kpi_values || {}
   if (!kpiFields?.length) {
-    return Object.entries(vals).map(([k, v]) => ({ label: k, value: String(v ?? ''), target: '', color: '' }))
+    return Object.entries(vals).map(([k, v]) => ({ goal: k, actual: String(v ?? ''), color: '' }))
   }
   return kpiFields.map(f => ({
-    label: f.label || f.key,
-    value: String(vals[f.key] ?? ''),
-    target: f.target || '',
+    goal: f.label || f.key,
+    actual: String(vals[f.key] ?? ''),
     color: '',
-  })).filter(k => k.value || k.target)
+  })).filter(k => k.goal || k.actual)
 }
 
 export function risksOf(statusEntry) {
