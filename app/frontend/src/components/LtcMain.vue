@@ -222,5 +222,6 @@ h1 {
 }
 /* 让 ModuleCardGrid 自带的 24px padding 不与本页冲突 — 由于 board-section 已有 padding,清掉网格本身的 padding */
 .board-section :deep(.cards-grid) { padding: 0; }
+.board-section :deep(.cards-toolbar) { padding: 0 0 10px; }
 .board-section :deep(.empty) { padding: 36px 0; }
 </style>

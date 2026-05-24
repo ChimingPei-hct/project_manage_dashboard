@@ -4,22 +4,29 @@ import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi } from '../../composables/useAdminApi.js'
 
 const { pdt, refresh } = useDashboard()
-const draft = ref({ name: '', code: '', description: '' })
+const draft = ref({ name: '', description: '' })
 const dirty = ref(false)
 const saving = ref(false)
 const errMsg = ref('')
 
+const NAME_RE = /^[A-Za-z0-9_\-一-龥]+$/
+
 watch(pdt, (v) => {
   if (!v) return
-  draft.value = { name: v.name || '', code: v.code || '', description: v.description || '' }
+  draft.value = { name: v.name || v.code || '', description: v.description || '' }
   dirty.value = false
 }, { immediate: true })
 
+const nameInvalid = computed(() => draft.value.name.length > 0 && !NAME_RE.test(draft.value.name))
+const canSave = computed(() => dirty.value && !saving.value && draft.value.name.length > 0 && !nameInvalid.value)
+
 async function save() {
+  if (!canSave.value) return
   saving.value = true
   errMsg.value = ''
   try {
-    await adminApi.updatePdt({ name: draft.value.name, code: draft.value.code, description: draft.value.description })
+    const name = draft.value.name
+    await adminApi.updatePdt({ name, code: name, description: draft.value.description })
     await refresh()
     dirty.value = false
   } catch (e) { errMsg.value = e.payload?.detail || e.message || '保存失败' }
@@ -34,7 +41,7 @@ async function save() {
         <div class="crumb">PDT 配置</div>
         <h2>{{ draft.name || '产品线基础信息' }}</h2>
       </div>
-      <button class="primary" :disabled="!dirty || saving" v-tooltip="dirty ? '保存修改' : '无变更'" @click="save">
+      <button class="primary" :disabled="!canSave" v-tooltip="dirty ? (nameInvalid ? '名称不允许空格或特殊字符' : '保存修改') : '无变更'" @click="save">
         {{ saving ? '保存中…' : '保存' }}
       </button>
     </header>
@@ -44,26 +51,14 @@ async function save() {
     <section class="block">
       <h3>基础信息</h3>
       <label class="field">
-        <span>PDT 代号(短码,用于路径)</span>
-        <input v-model="draft.code" @input="dirty = true" placeholder="如:luna6" />
-      </label>
-      <label class="field">
-        <span>PDT 名称</span>
-        <input v-model="draft.name" @input="dirty = true" placeholder="如:Multicam Pilot 3.0" />
+        <span>PDT 名称(用作显示名与路径标识,不含空格/特殊字符)</span>
+        <input v-model="draft.name" @input="dirty = true" placeholder="如:Luna6" :class="{ invalid: nameInvalid }" />
+        <em v-if="nameInvalid" class="hint-err">仅允许字母/数字/中文/下划线/连字符,不允许空格</em>
       </label>
       <label class="field">
         <span>描述(可选)</span>
         <textarea v-model="draft.description" @input="dirty = true" rows="3" placeholder="本产品线的简短说明"></textarea>
       </label>
-    </section>
-
-    <section class="block hint-block">
-      <h3>下一步</h3>
-      <ul>
-        <li>左侧「里程碑」配置时间轴节点(TR/SOP/Block)</li>
-        <li>左侧「总览卡片」配置 PDT 总览展示哪些模块卡</li>
-        <li>左侧「LTC 子项目」管理交付子项目,每个 LTC 下可加模块和子项</li>
-      </ul>
     </section>
   </div>
 </template>
@@ -76,6 +71,7 @@ h2 { margin: 0; font-size: 18px; font-weight: 700; }
 .block h3 { font-size: 13px; margin: 0 0 8px; font-weight: 700; }
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
 .field input, .field textarea { font-size: 13px; }
-.hint-block ul { padding-left: 20px; font-size: 12.5px; color: var(--text-muted); line-height: 1.7; }
+.field input.invalid { border-color: var(--status-red); }
+.hint-err { color: var(--status-red); font-size: 11px; font-style: normal; margin-top: 2px; }
 .err-banner { background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30); color: var(--status-red); padding: 6px 10px; border-radius: var(--radius); font-size: 12px; margin: 0; }
 </style>

@@ -67,11 +67,23 @@ function closeEdit() { editing.value = null; dialogMode.value = 'edit' }
 
 const dialogStatusKey = computed(() => editing.value ? keyOf(editing.value) : '')
 
-const showAddTile = computed(() => props.canEnterAdmin && !isReadonly.value)
-const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
+const showAdd = computed(() => props.canEnterAdmin && !isReadonly.value)
+const hasEmpty = computed(() => !props.cards.length && !showAdd.value)
+const addTip = computed(() => props.createDefaults.scope === 'ltc'
+  ? '新建一张本 LTC 私有卡(scope=ltc)'
+  : '新建一张 PDT 级总览卡片(scope=pdt)')
 </script>
 
 <template>
+  <div v-if="showAdd" class="cards-toolbar">
+    <button
+      type="button"
+      class="add-btn"
+      v-tooltip="addTip"
+      @click="openCreate"
+    ><span class="add-btn-plus">+</span>新增卡片</button>
+  </div>
+
   <div v-if="hasEmpty" class="empty">{{ emptyHint }}</div>
   <div v-else class="cards-grid">
     <article
@@ -87,13 +99,23 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
       >基础</span>
 
       <header class="card-head">
-        <span class="card-name">{{ card.name }}</span>
-        <ModuleStatusDots
-          :color="colorOf(card)"
-          :editable="canEdit(card.module.id, ltcId)"
-          :note="(risksFor(card)[0] || {}).text"
-          @edit="openEdit(card)"
-        />
+        <div class="card-head-top">
+          <span class="card-name">{{ card.name }}</span>
+          <div class="card-head-right">
+            <OwnerChip
+              class="card-owner"
+              :open-id="card.owner_open_id"
+              fallback="未指派"
+              v-tooltip="'Owner:负责该卡片的填报与跟进'"
+            />
+            <ModuleStatusDots
+              :color="colorOf(card)"
+              :editable="canEdit(card.module.id, ltcId)"
+              :note="(risksFor(card)[0] || {}).text"
+              @edit="openEdit(card)"
+            />
+          </div>
+        </div>
       </header>
 
       <div class="kpis-block">
@@ -133,7 +155,6 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
       </div>
 
       <footer class="card-foot">
-        <OwnerChip :open-id="card.owner_open_id" prefix="Owner: " fallback="未指派" />
         <button
           v-if="canEdit(card.module.id, ltcId)"
           class="edit-btn"
@@ -143,15 +164,6 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
       </footer>
     </article>
 
-    <article
-      v-if="showAddTile"
-      class="card add-card"
-      v-tooltip="createDefaults.scope === 'ltc' ? '新建一张本 LTC 私有卡(scope=ltc)' : '新建一张 PDT 级总览卡片(scope=pdt)'"
-      @click="openCreate"
-    >
-      <span class="plus">+</span>
-      <span class="add-lbl">新增卡片</span>
-    </article>
   </div>
 
   <StatusEditDialog
@@ -224,11 +236,30 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
 
 .card-head {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--text);
+}
+.card-head-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.card-owner {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .card-name {
   font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
@@ -313,7 +344,7 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
 .card-foot {
   margin-top: auto;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   font-size: 12px;
   color: var(--text-muted);
@@ -327,24 +358,33 @@ const hasEmpty = computed(() => !props.cards.length && !showAddTile.value)
   border-radius: var(--radius);
 }
 
-.add-card {
+.cards-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 24px 10px;
+}
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 5px 14px;
   border: 1px dashed var(--border);
   background: var(--panel-soft);
-  box-shadow: none;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-  cursor: pointer;
   color: var(--text-muted);
+  border-radius: var(--radius);
+  cursor: pointer;
   transition: color 120ms, border-color 120ms, background 120ms;
 }
-.add-card::before { display: none; }
-.add-card:hover {
+.add-btn:hover {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--panel);
-  transform: none;
 }
-.add-card .plus { font-size: 36px; line-height: 1; font-weight: 300; }
-.add-card .add-lbl { font-size: 13px; letter-spacing: 4px; }
+.add-btn-plus {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+}
 </style>
