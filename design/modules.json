@@ -31,17 +31,23 @@
       {
         "id": "deepperf",
         "name": "DeepPerf 服务与数据迁移",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "delay-stat",
         "name": "delay 统计方案优化",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "kev-stat",
         "name": "kev 数据采集与解析优化",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -79,17 +85,23 @@
       {
         "id": "ota-build",
         "name": "OTA 出包",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "hil-test",
         "name": "台架测试",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "code-gate",
         "name": "代码门禁",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -132,17 +144,23 @@
       {
         "id": "auto-ut",
         "name": "auto_ut 5.0",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "auto-ut-batch",
         "name": "auto_ut_batch",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "vcast24",
         "name": "vcast24 适配",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -180,22 +198,30 @@
       {
         "id": "ros2-adaptation",
         "name": "ROS2 适配(AY7/BTET/FT/ZS32)",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "ros2-upgrade",
         "name": "ros2 升级",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "gateway",
         "name": "Gateway",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "dvr",
         "name": "DVR",
-        "order": 4
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -235,27 +261,37 @@
       {
         "id": "model-integration",
         "name": "模型集成",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "model-perf",
         "name": "性能",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "overseas-single-pkg",
         "name": "海外左右舵单包",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "fisheye-sparse4d",
         "name": "3v 鱼眼 sparse4d",
-        "order": 4
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "tld-depth",
         "name": "tld+depth",
-        "order": 5
+        "order": 5,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -288,7 +324,9 @@
       {
         "id": "param2-switch",
         "name": "param2 切换",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -320,17 +358,23 @@
       {
         "id": "mainline-integration",
         "name": "主线集成",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "parking-perception",
         "name": "泊车感知",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "hmi-hde",
         "name": "HMI/HDE",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -452,32 +496,44 @@
       {
         "id": "param1-to-param2-mcap",
         "name": "param1→param2 mcap 转换",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "front-mono-merge",
         "name": "front 切 front_mono 合入",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "saic-aftersales",
         "name": "上汽售后背景标定光流算法",
-        "order": 3
+        "order": 3,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "geely-test",
         "name": "吉利测试用例",
-        "order": 4
+        "order": 4,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "kx21-mmc-zs32-design",
         "name": "kx21/mmc/zs32 小域控设计",
-        "order": 5
+        "order": 5,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "zs32-ecu-cal",
         "name": "zs32 小域控标定联调",
-        "order": 6
+        "order": 6,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",
@@ -510,12 +566,16 @@
       {
         "id": "drive-replay",
         "name": "行车回灌",
-        "order": 1
+        "order": 1,
+        "owner_open_id": null,
+        "risk_note": ""
       },
       {
         "id": "param2-cloud-replay",
         "name": "param2 云端回灌",
-        "order": 2
+        "order": 2,
+        "owner_open_id": null,
+        "risk_note": ""
       }
     ],
     "created_at": "2026-05-23T19:00:00+08:00",

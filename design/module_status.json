@@ -28,7 +28,25 @@
         "severity": "red",
         "text": "DeepPerf 与新版调度器兼容性问题阻塞中"
       }
-    ]
+    ],
+    "kpi_items": [
+      {
+        "label": "cpu_util",
+        "value": "78",
+        "target": ""
+      },
+      {
+        "label": "fps_perception",
+        "value": "27.5",
+        "target": ""
+      },
+      {
+        "label": "delay_e2e",
+        "value": "138",
+        "target": ""
+      }
+    ],
+    "sub_items_risk": {}
   },
   "pdt-devenv": {
     "module_color": "green",
@@ -43,7 +61,21 @@
     "kpi_values": {
       "build_pass": "99.2",
       "ci_duration": "21"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "build_pass",
+        "value": "99.2",
+        "target": ""
+      },
+      {
+        "label": "ci_duration",
+        "value": "21",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-ut": {
     "module_color": "red",
@@ -74,7 +106,25 @@
         "severity": "yellow",
         "text": "失败用例 37 条,16 条与并发相关需排查"
       }
-    ]
+    ],
+    "kpi_items": [
+      {
+        "label": "coverage",
+        "value": "54",
+        "target": ""
+      },
+      {
+        "label": "ut_pass",
+        "value": "92.8",
+        "target": ""
+      },
+      {
+        "label": "failing",
+        "value": "37",
+        "target": ""
+      }
+    ],
+    "sub_items_risk": {}
   },
   "pdt-qnx-migration": {
     "module_color": "red",
@@ -105,7 +155,20 @@
         "severity": "red",
         "text": "tools 链供应商交付延后 2 周"
       }
-    ]
+    ],
+    "kpi_items": [
+      {
+        "label": "migrated_pkgs",
+        "value": "28",
+        "target": ""
+      },
+      {
+        "label": "blockers",
+        "value": "3",
+        "target": ""
+      }
+    ],
+    "sub_items_risk": {}
   },
   "pdt-model-inference": {
     "module_color": "green",
@@ -115,7 +178,21 @@
     "kpi_values": {
       "infer_latency": "32",
       "throughput": "135"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "infer_latency",
+        "value": "32",
+        "target": ""
+      },
+      {
+        "label": "throughput",
+        "value": "135",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-perception": {
     "module_color": "green",
@@ -128,7 +205,21 @@
     "kpi_values": {
       "obj_recall": "96.4",
       "lane_acc": "97.1"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "obj_recall",
+        "value": "96.4",
+        "target": ""
+      },
+      {
+        "label": "lane_acc",
+        "value": "97.1",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-mainline-parking": {
     "module_color": "red",
@@ -158,7 +249,20 @@
         "severity": "yellow",
         "text": "主线/泊车回归用例库待补 12 个场景"
       }
-    ]
+    ],
+    "kpi_items": [
+      {
+        "label": "integration_pass",
+        "value": "73",
+        "target": ""
+      },
+      {
+        "label": "open_bugs",
+        "value": "26",
+        "target": ""
+      }
+    ],
+    "sub_items_risk": {}
   },
   "pdt-data-feedback": {
     "module_color": "yellow",
@@ -179,7 +283,20 @@
         "severity": "yellow",
         "text": "日回传量 612GB,低于目标 800GB"
       }
-    ]
+    ],
+    "kpi_items": [
+      {
+        "label": "daily_upload_gb",
+        "value": "612",
+        "target": ""
+      },
+      {
+        "label": "loss_rate",
+        "value": "1.8",
+        "target": ""
+      }
+    ],
+    "sub_items_risk": {}
   },
   "pdt-auto-efficiency": {
     "module_color": "green",
@@ -189,7 +306,21 @@
     "kpi_values": {
       "auto_rate": "82",
       "manual_saved": "46"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "auto_rate",
+        "value": "82",
+        "target": ""
+      },
+      {
+        "label": "manual_saved",
+        "value": "46",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-data-collection": {
     "module_color": "green",
@@ -199,7 +330,21 @@
     "kpi_values": {
       "mileage": "3260",
       "scene_cov": "88"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "mileage",
+        "value": "3260",
+        "target": ""
+      },
+      {
+        "label": "scene_cov",
+        "value": "88",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-calibration": {
     "module_color": "green",
@@ -217,7 +362,21 @@
     "kpi_values": {
       "calib_pass": "99.1",
       "vehicles": "47"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "calib_pass",
+        "value": "99.1",
+        "target": ""
+      },
+      {
+        "label": "vehicles",
+        "value": "47",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-replay": {
     "module_color": "green",
@@ -231,7 +390,21 @@
     "kpi_values": {
       "scene_total": "5240",
       "weekly_runs": "238"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "scene_total",
+        "value": "5240",
+        "target": ""
+      },
+      {
+        "label": "weekly_runs",
+        "value": "238",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "pdt-resources": {
     "module_color": "green",
@@ -242,226 +415,373 @@
       "hr_fill": "72.6",
       "budget_use": "27",
       "chip_ship": "5.14"
-    }
+    },
+    "kpi_items": [
+      {
+        "label": "hr_fill",
+        "value": "72.6",
+        "target": ""
+      },
+      {
+        "label": "budget_use",
+        "value": "27",
+        "target": ""
+      },
+      {
+        "label": "chip_ship",
+        "value": "5.14",
+        "target": ""
+      }
+    ],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mainline-id4-base-service": {
     "module_color": "green",
     "updated_by": "ou_cfa2107ad7b43c2f4fa578d3e8772bca",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ay7-base-service": {
     "module_color": "green",
     "updated_by": "ou_cfa2107ad7b43c2f4fa578d3e8772bca",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-btet-base-service": {
     "module_color": "green",
     "updated_by": "ou_34be37dee83dfbc452d03a8b13fff9b7",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-allinone-base-service": {
     "module_color": "green",
     "updated_by": "ou_658540583f0083b8f2d15314bbcf4348",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-ecu-base-service": {
     "module_color": "green",
     "updated_by": "ou_658540583f0083b8f2d15314bbcf4348",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ft-base-service": {
     "module_color": "green",
     "updated_by": "ou_d876d1bca4aeb42d1d13f9a08146ab11",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mmc-base-service": {
     "module_color": "green",
     "updated_by": "ou_87ece67c54c636362c4020ff0040592b",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mainline-id4-data-tools": {
     "module_color": "green",
     "updated_by": "ou_6caaa36a550febdc00758ef45ebc33b8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ay7-data-tools": {
     "module_color": "green",
     "updated_by": "ou_6caaa36a550febdc00758ef45ebc33b8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-btet-data-tools": {
     "module_color": "green",
     "updated_by": "ou_6caaa36a550febdc00758ef45ebc33b8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-allinone-data-tools": {
     "module_color": "green",
     "updated_by": "ou_38e3ae26c22830f586bcb2643c4c40b3",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-ecu-data-tools": {
     "module_color": "green",
     "updated_by": "ou_c40504df5ee4683e43c2ed31e5a406ff",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ft-data-tools": {
     "module_color": "green",
     "updated_by": "ou_6caaa36a550febdc00758ef45ebc33b8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mmc-data-tools": {
     "module_color": "green",
     "updated_by": "ou_6caaa36a550febdc00758ef45ebc33b8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ay7-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_f9620d8c753df409e3068ddd0e8d26f9",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-allinone-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_f9620d8c753df409e3068ddd0e8d26f9",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-ecu-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_f9620d8c753df409e3068ddd0e8d26f9",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-btet-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ft-fullstack-pnc": {
     "module_color": "yellow",
     "updated_by": "ou_43dce79f6e7971b1507f42ad74c73773",
     "updated_at": "2026-05-23T19:00:00+08:00",
     "metadata": {},
-    "risk_note": "时间同步功能上线 delay"
+    "risk_note": "时间同步功能上线 delay",
+    "kpi_items": [],
+    "risks": [
+      {
+        "severity": "red",
+        "text": "时间同步功能上线 delay"
+      }
+    ],
+    "sub_items_risk": {}
   },
   "ltc-mmc-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_ee5b2fa0e6fc5e60362376fa07abeea2",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zp22-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_b1ee4d42208d99f1db8142a8c983ca0d",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ecarx-kx21-fullstack-pnc": {
     "module_color": "green",
     "updated_by": "ou_87ece67c54c636362c4020ff0040592b",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ay7-acore-os": {
     "module_color": "green",
     "updated_by": "ou_626d8eaf98cbfb6add0474ac1eb14723",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-byd-acore-os": {
     "module_color": "green",
     "updated_by": "ou_626d8eaf98cbfb6add0474ac1eb14723",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ft-acore-os": {
     "module_color": "yellow",
     "updated_by": "ou_84ddecb7a8befdc338a99147c12e96de",
     "updated_at": "2026-05-23T19:00:00+08:00",
     "metadata": {},
-    "risk_note": "soc 卡死偶发,mcu 启动异常调查中"
+    "risk_note": "soc 卡死偶发,mcu 启动异常调查中",
+    "kpi_items": [],
+    "risks": [
+      {
+        "severity": "red",
+        "text": "soc 卡死偶发,mcu 启动异常调查中"
+      }
+    ],
+    "sub_items_risk": {}
   },
   "ltc-btet-acore-os": {
     "module_color": "red",
     "updated_by": "ou_0b43891f8f9841c4cc6183cb9740c62e",
     "updated_at": "2026-05-23T19:00:00+08:00",
     "metadata": {},
-    "risk_note": "PV 版本风险:发版后稳定性观察期"
+    "risk_note": "PV 版本风险:发版后稳定性观察期",
+    "kpi_items": [],
+    "risks": [
+      {
+        "severity": "red",
+        "text": "PV 版本风险:发版后稳定性观察期"
+      }
+    ],
+    "sub_items_risk": {}
   },
   "ltc-zs32-allinone-acore-os": {
     "module_color": "green",
     "updated_by": "ou_abf27289e9906edb0404a7943160dbc8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-ecu-acore-os": {
     "module_color": "green",
     "updated_by": "ou_b645ce9f87dbc0a53b3271a188443140",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mmc-acore-os": {
     "module_color": "red",
     "updated_by": "ou_e4e35914e61b024dc482111de5217064",
     "updated_at": "2026-05-23T19:00:00+08:00",
     "metadata": {},
-    "risk_note": "MMC 行内标红:pv2.6 功能验证存在阻塞项"
+    "risk_note": "MMC 行内标红:pv2.6 功能验证存在阻塞项",
+    "kpi_items": [],
+    "risks": [
+      {
+        "severity": "red",
+        "text": "MMC 行内标红:pv2.6 功能验证存在阻塞项"
+      }
+    ],
+    "sub_items_risk": {}
   },
   "ltc-ay7-mcu": {
     "module_color": "green",
     "updated_by": "ou_e95e84006454dea6d717499ed55d8bf3",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-byd-mcu": {
     "module_color": "green",
     "updated_by": "ou_d219b269c7c29cef281b39b27fb5e78d",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-btet-mcu": {
     "module_color": "green",
     "updated_by": "ou_6b940c7d25feee08901eb2ae63731a0e",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-allinone-mcu": {
     "module_color": "green",
     "updated_by": "ou_17d49a8c66ea62ac5812f187bd4ec3ae",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-ft-mcu": {
     "module_color": "green",
     "updated_by": "ou_996338561a87def0ced6d52281f03da8",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-mmc-mcu": {
     "module_color": "green",
     "updated_by": "ou_7f23e55a47499e83119f3fa68a6b52e0",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   },
   "ltc-zs32-ecu-mcu": {
     "module_color": "green",
     "updated_by": "ou_54e40be083adb2771715aabe2b981163",
     "updated_at": "2026-05-23T19:00:00+08:00",
-    "metadata": {}
+    "metadata": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_risk": {}
   }
 }
