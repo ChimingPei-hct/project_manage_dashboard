@@ -26,7 +26,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['close', 'saved', 'created', 'deleted', 'updated'])
 
-const COLORS = ['green', 'yellow', 'red', 'gray']
+const COLORS = ['green', 'yellow', 'red']
 const COLOR_LABEL = { green: '绿/正常', yellow: '黄/预警', red: '红/Block', gray: '灰/未报' }
 
 const { refresh, modules } = useDashboard()
@@ -99,7 +99,7 @@ const anyNonGreen = computed(() => {
   return Object.values(subColors.value).some(v => v && v !== 'green')
 })
 const hasRiskText = computed(() => risks.value.some(r => (r.text || '').trim()))
-const riskMissing = computed(() => anyNonGreen.value && !hasRiskText.value)
+const riskMissing = computed(() => false)
 
 /* === 编辑操作 === */
 function pickModuleColor(c) { moduleColor.value = c }
@@ -216,6 +216,40 @@ async function createCard() {
     }
     const created = await adminApi.createModule(full)
     modules.value = [...(modules.value || []), created]
+
+    /* 若用户在新增弹框里也填了 KPI / 风险 / 整体色,串联写入 status */
+    const cleanKpi = kpiItems.value
+      .map(k => ({
+        goal: (k.goal || '').trim(),
+        actual: (k.actual || '').trim(),
+        color: COLORS.includes(k.color) && k.color !== 'gray' ? k.color : '',
+      }))
+      .filter(k => k.goal || k.actual)
+    const cleanRisks = risks.value
+      .map(r => ({ severity: r.severity || 'red', text: (r.text || '').trim() }))
+      .filter(r => r.text)
+    const hasStatus =
+      cleanKpi.length || cleanRisks.length ||
+      (moduleColor.value && moduleColor.value !== 'gray')
+    if (hasStatus) {
+      try {
+        await api.put(`/api/status/${encodeURIComponent(created.id || id)}`, {
+          module_color: moduleColor.value || 'gray',
+          sub_items_color: {},
+          sub_items_risk: {},
+          kpi_items: cleanKpi,
+          risks: cleanRisks,
+          risk_note: cleanRisks[0]?.text || '',
+        })
+      } catch (e) {
+        toast.value = '卡片已创建,状态未保存,请打开编辑补填'
+        await refresh()
+        emit('created', created)
+        setTimeout(() => { toast.value = ''; emit('close') }, 2500)
+        return
+      }
+    }
+    await refresh()
     emit('created', created)
     emit('close')
   } catch (e) {
@@ -252,7 +286,7 @@ const headerTitle = computed(() => {
 const headerSub = computed(() => {
   if (props.mode === 'create') {
     const sc = props.createDefaults?.scope || 'pdt'
-    return `${SCOPE_LABEL[sc] || sc} · 填好基本信息后即可创建`
+    return `${SCOPE_LABEL[sc] || sc} · 可一次填齐基本信息 / 目标 / 风险 / 状态色`
   }
   return `${props.module?.group || ''} · ${SCOPE_LABEL[props.module?.scope] || props.module?.scope || ''}`
 })
@@ -285,10 +319,6 @@ const deleteBody = computed(() => {
             <span class="lbl">卡名</span>
             <input v-model="sName" :readonly="!canEditStructure" placeholder="如:性能专项" />
           </label>
-          <label class="field">
-            <span class="lbl">分组</span>
-            <input v-model="sGroup" :readonly="!canEditStructure" placeholder="如:总览" />
-          </label>
           <div class="field field-owner">
             <span class="lbl">Owner</span>
             <UserSearchInput
@@ -308,7 +338,7 @@ const deleteBody = computed(() => {
           </div>
         </div>
 
-        <div v-if="mode === 'edit'" class="basic-row light-row">
+        <div class="basic-row light-row">
           <span class="lbl">整体状态灯</span>
           <div class="color-row">
             <button
@@ -333,16 +363,16 @@ const deleteBody = computed(() => {
         </div>
       </section>
 
-      <!-- Block 2:关键指标 -->
-      <section v-if="mode === 'edit'" class="block">
+      <!-- Block 2:关键目标 -->
+      <section class="block">
         <div class="block-title">
-          <span>关键指标</span>
+          <span>关键目标</span>
           <button
             v-if="canEditStructure"
             class="mini-add"
             v-tooltip="'新增一组指标(目标 / 现状 / 灯)'"
             @click="addKpi"
-          >+ 行</button>
+          >+ 加目标</button>
         </div>
         <div v-if="!kpiItems.length" class="hint">暂无指标</div>
         <div v-else class="kpi-table">
@@ -370,14 +400,12 @@ const deleteBody = computed(() => {
       </section>
 
       <!-- Block 3:风险 -->
-      <section v-if="mode === 'edit'" class="block">
+      <section class="block">
         <div class="block-title">
-          <span>风险 / 重点问题<span v-if="anyNonGreen" class="req">(非绿必填至少一条)</span></span>
+          <span>风险 / 重点问题</span>
           <button class="mini-add" v-tooltip="'新增一条风险'" @click="addRisk">+ 风险</button>
         </div>
-        <div v-if="!risks.length" class="hint" :class="{ err: riskMissing }">
-          {{ riskMissing ? '风险说明不能为空(非绿项必填至少一条)' : '暂无风险,点击「+ 风险」添加' }}
-        </div>
+        <div v-if="!risks.length" class="hint">暂无风险,点击「+ 风险」添加</div>
         <div v-else class="risk-list">
           <div v-for="(r, i) in risks" :key="i" class="risk-row">
             <textarea
@@ -399,7 +427,7 @@ const deleteBody = computed(() => {
           v-if="mode === 'create'"
           class="primary"
           :disabled="saving || !sName.trim()"
-          v-tooltip="'创建新卡片;创建后可继续填报状态'"
+          v-tooltip="'创建卡片(含已填写的目标 / 风险 / 状态色)'"
           @click="createCard"
         >{{ saving ? '创建中…' : '创建' }}</button>
         <button

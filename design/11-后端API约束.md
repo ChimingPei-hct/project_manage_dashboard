@@ -151,6 +151,11 @@ GET    /api/auth/me
 # PDT
 GET    /api/pdt
 PUT    /api/pdt
+POST   /api/pdt/icon                      # multipart 上传 PDT 图标;Super/PDT/LTC Admin;白名单 .svg/.png ≤256KB
+DELETE /api/pdt/icon                      # 清除 PDT 图标(同权限);文件保留,只清 pdt.json 字段
+
+# 实例静态资源(只读;无需鉴权,Cookie 仍可带)
+GET    /assets/{path:path}                # 映射 DATA_DIR/assets/;白名单后缀 svg/png/jpg/ico
 
 # LTC
 GET    /api/ltcs                          # ?include_archived=true 可选
@@ -163,6 +168,9 @@ GET    /api/modules                       # ?scope=&ltc_id=
 POST   /api/modules
 PUT    /api/modules/{id}
 DELETE /api/modules/{id}
+# 备注:前端「新增卡片」弹框允许同时填 KPI/风险/整体色,
+#       此时由前端串联 POST /api/modules + PUT /api/status/{id},非后端原子操作;
+#       第二步失败仅前端 toast 提示,不回滚已创建的 module。
 
 # 状态
 GET    /api/status                        # 全量当前态
