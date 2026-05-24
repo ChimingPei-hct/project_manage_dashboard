@@ -8,7 +8,6 @@ import { handleCallbackIfPresent, startLogin } from './composables/useFeishuLogi
 import PdtOverview from './components/PdtOverview.vue'
 import LtcMain from './components/LtcMain.vue'
 import AdminPanel from './components/AdminPanel.vue'
-import WeekSwitcher from './components/WeekSwitcher.vue'
 
 const { me, refresh: refreshAuth } = useAuth()
 const { pdt, week, isReadonly, refresh, setWeek, startSSE } = useDashboard()
@@ -107,7 +106,6 @@ onMounted(async () => {
         >{{ n.label }}</button>
       </nav>
       <div class="right">
-        <WeekSwitcher />
         <span class="user" v-tooltip="me?.dev_login ? 'Dev 后门身份(本地调试)' : '当前登录用户'">
           {{ me?.name || me?.open_id || '未登录' }}
           <em v-if="me?.is_super">·super</em>
