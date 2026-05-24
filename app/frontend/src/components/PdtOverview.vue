@@ -5,11 +5,10 @@ import { useView } from '../composables/useView.js'
 import { useAuth } from '../composables/useAuth.js'
 import { useContactCache } from '../composables/useContactCache.js'
 import TimelineBar from './TimelineBar.vue'
-import MilestoneEditor from './admin/MilestoneEditor.vue'
-import StatusLegend from './StatusLegend.vue'
 import ModuleCardGrid from './ModuleCardGrid.vue'
 import Modal from './harness/Modal.vue'
 import PdtBaseDrawer from './admin/PdtBaseDrawer.vue'
+import MilestonesDrawer from './admin/MilestonesDrawer.vue'
 import AdminUsers from './admin/AdminUsers.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
 
@@ -60,13 +59,17 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
 <template>
   <div class="pdt-overview">
     <div class="head">
-      <StatusLegend />
       <div v-if="canEnterPdtAdmin && !isReadonly" class="admin-tools">
         <button
           class="tool-btn"
           v-tooltip="'编辑 PDT 名称、SOP 等基础信息'"
           @click="openAdminTool('pdt-base')"
         >⚙ PDT 基础</button>
+        <button
+          class="tool-btn"
+          v-tooltip="'编辑里程碑(甘特图数据源)'"
+          @click="openAdminTool('milestones')"
+        >🗓 里程碑</button>
         <button
           class="tool-btn"
           v-tooltip="'管理 PDT/LTC Admin 与 Owner 绑定'"
@@ -93,16 +96,7 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
       >全局看板</button>
     </nav>
 
-    <template v-if="sub === 'timeline'">
-      <TimelineBar :milestones="pdt?.milestones || []" />
-      <section v-if="canEnterPdtAdmin && !isReadonly" class="milestone-inline">
-        <header class="mi-head">
-          <h3>编辑里程碑</h3>
-          <span class="mi-hint">所见即所得 · 改动保存后甘特图即时刷新</span>
-        </header>
-        <MilestoneEditor :show-preview="false" />
-      </section>
-    </template>
+    <TimelineBar v-if="sub === 'timeline'" :milestones="pdt?.milestones || []" />
 
     <ModuleCardGrid
       v-if="sub === 'kanban'"
@@ -114,6 +108,9 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
 
     <Modal :open="showAdminTool === 'pdt-base'" title="PDT 基础信息" width="640px" @close="closeAdminTool">
       <PdtBaseDrawer />
+    </Modal>
+    <Modal :open="showAdminTool === 'milestones'" title="里程碑编辑" width="960px" @close="closeAdminTool">
+      <MilestonesDrawer />
     </Modal>
     <Modal :open="showAdminTool === 'people'" title="人员与角色" width="880px" @close="closeAdminTool">
       <AdminUsers />
@@ -173,20 +170,4 @@ function switchSub(s) { pushView({ ...current.value, sub: s }) }
   color: #fff;
 }
 
-.milestone-inline {
-  margin: 8px 24px 24px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--panel);
-  box-shadow: var(--shadow-sm);
-}
-.milestone-inline .mi-head {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.milestone-inline .mi-head h3 { margin: 0; font-size: 14px; font-weight: 700; }
-.milestone-inline .mi-hint { font-size: 11px; color: var(--text-dim); }
 </style>

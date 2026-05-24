@@ -128,6 +128,13 @@ PDT 总览看板、LTC 看板的**模块卡片**与**风险任务卡片**必须�
 - **引导气泡**:新增有交互行为的 UI 元素必须同步加 hover 引导气泡(`v-tooltip="文案"`),文案动词开头说明"会发生什么"
 - **状态色**:绿 `#52c41a` / 黄 `#faad14` / 红 `#f5222d`,严禁用其他色替代状态语义
 
+## 本地测试 / 截图输出
+
+- 所有 Playwright 截图、调试图片、临时 dump 一律落 `.cache/screenshots/`(已 gitignore)
+- **严禁**在仓库根写 `*.png` / `*.log` / `screenshot-*` 等散落产物
+- 临时脚本输出落 `.cache/`(根级,不分子目录)
+- 主目录只保留入仓资产,杜绝"用完不清"的产物堆积
+
 ## 搜索排除
 
-搜索代码时排除:`node_modules/`、`dist/`、`.venv/`、`__pycache__/`、`datas/`、`doc/`
+搜索代码时排除:`node_modules/`、`dist/`、`.venv/`、`__pycache__/`、`datas/`、`doc/`、`.cache/`

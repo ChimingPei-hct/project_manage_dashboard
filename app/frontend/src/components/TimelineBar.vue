@@ -2,6 +2,8 @@
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { Timeline, DataSet } from 'vis-timeline/standalone'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
+import moment from 'moment/min/moment-with-locales'
+moment.locale('zh-cn')
 
 const props = defineProps({
   milestones: { type: Array, default: () => [] },
@@ -123,8 +125,9 @@ function render() {
       template: itemTemplate,
       locale: 'zh-cn',
       locales: {
-        'zh-cn': { current: '当前', time: '时间', deleteSelected: '删除' },
+        'zh-cn': { current: '当前', time: '', deleteSelected: '删除' },
       },
+      moment: (date) => moment(date),
       format: {
         minorLabels: {
           millisecond: 'SSS', second: 's', minute: 'HH:mm', hour: 'HH:mm',

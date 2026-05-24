@@ -47,7 +47,7 @@ const editing = ref(null)
 const dialogMode = ref('edit')
 
 function openEdit(card) {
-  if (!canEdit(card.module.id, ltcId)) return
+  if (!canEdit(card.module.id, props.ltcId)) return
   dialogMode.value = 'edit'
   editing.value = card.module
 }

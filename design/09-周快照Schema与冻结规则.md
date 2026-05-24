@@ -92,7 +92,7 @@ main 模板:`weekly_snapshots/` 空目录(可保留 `.gitkeep`)。
 - "修正历史快照"= 删除该文件并重新 freeze(留下审计记录 `metadata.replaced_by` / `replaced_at`)
 - 前端切换到历史周时:数据全部从快照拉取,Owner 的填报入口禁用,UI 显示"历史周(只读)"banner
 - **前端 URL 协议**:`?week=YYYY-Www`(如 `?week=2026-W21`),格式校验在 `useView.parseView`;不合法的 week 参数会被忽略,等同于"当前周"
-- 冻结成功后端发 SSE `snapshot:created`,WeekSwitcher 与 SnapshotPanel 自动刷新列表,无需手动重载页面
+- 冻结成功后端发 SSE `snapshot:created`,`SnapshotPanel` 自动刷新表格,无需手动重载页面
 
 ## 8. 与历史流的关系
 

@@ -10,7 +10,6 @@ import LtcTree from './LtcTree.vue'
 import TimelineBar from './TimelineBar.vue'
 import ModuleCardGrid from './ModuleCardGrid.vue'
 import ModuleRiskList from './ModuleRiskList.vue'
-import StatusLegend from './StatusLegend.vue'
 import Modal from './harness/Modal.vue'
 import LtcDrawer from './admin/LtcDrawer.vue'
 import AdminUsers from './admin/AdminUsers.vue'
@@ -95,7 +94,6 @@ function closeAdminTool() { showAdminTool.value = '' }
             <span class="chip yellow" v-tooltip="'预警项总数'"><i class="dot"></i>{{ summary.yellow }}</span>
             <span class="chip green" v-tooltip="'正常项总数'"><i class="dot"></i>{{ summary.green }}</span>
           </span>
-          <StatusLegend />
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
               class="tool-btn"
@@ -116,10 +114,9 @@ function closeAdminTool() { showAdminTool.value = '' }
         </div>
       </header>
 
-      <section class="timeline-section">
+      <section v-if="milestones.length" class="timeline-section">
         <div class="section-title">里程碑 · 本 LTC 自有</div>
-        <TimelineBar v-if="milestones.length" :milestones="milestones" />
-        <div v-else class="placeholder">该 LTC 暂未配置里程碑,可在「⚙ LTC 基础」中补充。</div>
+        <TimelineBar :milestones="milestones" />
       </section>
 
       <section id="board-section" class="board-section">
@@ -223,13 +220,6 @@ h1 {
   margin-bottom: 8px; color: var(--text);
   padding-bottom: 4px; border-bottom: 1px solid var(--border-subtle);
 }
-.placeholder {
-  font-size: 12px; color: var(--text-muted);
-  padding: 18px; text-align: center;
-  background: var(--panel-soft); border-radius: 6px;
-  border: 1px dashed var(--border-subtle);
-}
-
 /* 让 ModuleCardGrid 自带的 24px padding 不与本页冲突 — 由于 board-section 已有 padding,清掉网格本身的 padding */
 .board-section :deep(.cards-grid) { padding: 0; }
 .board-section :deep(.empty) { padding: 36px 0; }
