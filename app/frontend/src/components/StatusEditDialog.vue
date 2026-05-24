@@ -19,6 +19,7 @@ const props = defineProps({
   current: { type: Object, default: () => ({}) },
   focusSubId: { type: String, default: '' },
   statusKey: { type: String, default: '' },
+  ltcId: { type: String, default: '' },
   mode: { type: String, default: 'edit' }, // 'edit' | 'create'
   canEditStructure: { type: Boolean, default: false },
   createDefaults: { type: Object, default: () => ({ scope: 'pdt', ltc_id: null, group: '总览' }) },
@@ -203,13 +204,15 @@ async function createCard() {
   saving.value = true
   try {
     const id = newId()
+    const scope = props.createDefaults?.scope || 'pdt'
+    const ltc_id = props.createDefaults?.ltc_id || props.ltcId || null
     const full = {
       id,
-      scope: props.createDefaults?.scope || 'pdt',
-      ltc_id: props.createDefaults?.ltc_id || null,
+      scope,
+      ltc_id: scope === 'ltc' ? ltc_id : null,
       sub_items: [],
       kpi_fields: [],
-      order: (modules.value || []).filter(m => m.scope === (props.createDefaults?.scope || 'pdt')).length + 1,
+      order: (modules.value || []).filter(m => m.scope === scope).length + 1,
       ...body,
     }
     const created = await adminApi.createModule(full)
@@ -236,6 +239,32 @@ async function doDelete() {
 }
 
 function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
+
+const SCOPE_LABEL = { pdt: 'PDT 总览', ltc: '本 LTC 私有卡', ltc_template: '基础卡(所有 LTC 共享)' }
+const headerTitle = computed(() => {
+  if (props.mode === 'create') {
+    const sc = props.createDefaults?.scope || 'pdt'
+    if (sc === 'ltc') return '新建 LTC 私有卡'
+    if (sc === 'ltc_template') return '新建基础卡'
+    return '新建 PDT 卡片'
+  }
+  return props.module?.name || '模块编辑'
+})
+const headerSub = computed(() => {
+  if (props.mode === 'create') {
+    const sc = props.createDefaults?.scope || 'pdt'
+    return `${SCOPE_LABEL[sc] || sc} · 填好基本信息后即可创建`
+  }
+  return `${props.module?.group || ''} · ${SCOPE_LABEL[props.module?.scope] || props.module?.scope || ''}`
+})
+
+const isTemplateCard = computed(() => props.module?.scope === 'ltc_template')
+const deleteBody = computed(() => {
+  if (isTemplateCard.value) {
+    return `确认删除基础卡「${props.module?.name || ''}」?\n注意:基础卡删除会影响所有 LTC,所有 LTC 上的该卡及状态都会同步消失,历史流保留。`
+  }
+  return `确认删除卡片「${props.module?.name || ''}」?\n本卡状态会被清除,历史流保留。`
+})
 </script>
 
 <template>
@@ -243,12 +272,8 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
     <div class="edit-box" role="dialog" :aria-label="`编辑 ${module?.name || ''}`">
       <header class="dlg-head">
         <div>
-          <h3>{{ mode === 'create' ? '新建 PDT 卡片' : (module?.name || '模块编辑') }}</h3>
-          <p class="sub">
-            {{ mode === 'create'
-              ? `scope=${createDefaults?.scope || 'pdt'} · 填好基本信息后即可创建`
-              : `${module?.group || ''} · ${module?.scope === 'pdt' ? 'PDT 级' : 'LTC 级'}` }}
-          </p>
+          <h3>{{ headerTitle }}</h3>
+          <p class="sub">{{ headerSub }}</p>
         </div>
         <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃未保存修改'">×</button>
       </header>
@@ -306,42 +331,6 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
             v-tooltip="'从总览删除此卡(状态同步清除,历史保留)'"
             @click="confirmDeleteOpen = true"
           >🗑 删除该卡</button>
-        </div>
-      </section>
-
-      <!-- 子项色块(仅有子项时出现,LTC 常用) -->
-      <section v-if="mode === 'edit' && module?.sub_items?.length" class="block">
-        <div class="block-title">子项状态 + 风险说明</div>
-        <div class="sub-list">
-          <div
-            v-for="s in module.sub_items"
-            :key="s.id"
-            class="sub-row"
-            :class="{ focus: focusSubId === s.id }"
-          >
-            <div class="sub-head">
-              <span class="sub-name">{{ s.name }}</span>
-              <div class="color-row">
-                <button
-                  v-for="c in COLORS"
-                  :key="c"
-                  type="button"
-                  class="swatch sm"
-                  :class="{ active: subColors[s.id] === c }"
-                  :style="{ background: `var(--status-${c})` }"
-                  v-tooltip="`置为 ${COLOR_LABEL[c]}`"
-                  @click="pickSubColor(s.id, c)"
-                >{{ subColors[s.id] === c ? '✓' : '' }}</button>
-              </div>
-            </div>
-            <input
-              v-if="subColors[s.id] === 'red' || subColors[s.id] === 'yellow'"
-              v-model="subRisks[s.id]"
-              class="sub-note-input"
-              placeholder="该子项的风险/阻塞说明"
-              v-tooltip="'子项级风险说明,会在风险详情页显示在色块右侧'"
-            />
-          </div>
         </div>
       </section>
 
@@ -427,8 +416,8 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
 
       <ConfirmDialog
         :open="confirmDeleteOpen"
-        title="删除卡片"
-        :body="`确认删除卡片「${module?.name || ''}」?\n本卡状态会被清除,历史流保留。`"
+        :title="isTemplateCard ? '删除基础卡' : '删除卡片'"
+        :body="deleteBody"
         confirm-text="删除"
         @confirm="doDelete"
         @cancel="confirmDeleteOpen = false"

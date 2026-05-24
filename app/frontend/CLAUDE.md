@@ -21,6 +21,8 @@
 - ❌ 跳过 `v-tooltip` 直接 `title=""`(`title` 仅作长说明兜底)
 - ❌ 在组件内直接 `fetch`(走 `api/client.js`)
 - ❌ 给"未填报"赋绿/黄/红色(用灰)
+- ❌ 在多处页面内嵌写**看板卡片**渲染 — 必须 import `ModuleCardGrid.vue`(唯一实现)
+- ❌ 在多处页面内嵌写**风险任务卡片**渲染 — 必须 import `ModuleRiskList.vue`(唯一实现)
 
 ## 新增可交互元素强制流程
 

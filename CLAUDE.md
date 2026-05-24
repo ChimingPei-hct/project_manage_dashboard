@@ -112,6 +112,16 @@ bash scripts/role-test.sh
 python3 design/validate_data_files.py
 ```
 
+## 看板卡片 / 风险卡片共享约束(harness 红线)
+
+PDT 总览看板、LTC 看板的**模块卡片**与**风险任务卡片**必须使用同一套代码,**一处维护、两处受用**。
+
+- 模块卡片唯一实现:`app/frontend/src/components/ModuleCardGrid.vue`
+- 风险任务卡片唯一实现:`app/frontend/src/components/ModuleRiskList.vue`
+- 差异(scope/徽标/权限/创建预设/上下文 ltcId 等)只能通过 props 表达,不允许在外层页面(`PdtOverview.vue`、`LtcMain.vue` 等)内嵌写卡片 HTML/CSS
+- 新增看板类型(如未来 PMO 总览)也必须 import 上述组件,**不允许新建第三套**卡片渲染
+- 违反 → PR 拒收
+
 ## UI 规范要点(详见 `design/12-前端实现约束.md`)
 
 - **统一弧边矩形**(`border-radius: 6px`):按钮、状态色块、chip、徽章等一律 6px。**严禁**胶囊形(50% / 9999px / 与高度同量级的大圆角)
