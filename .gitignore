@@ -1,5 +1,8 @@
 .DS_Store
-datas/
+# datas/ 作为项目样例随仓库,仅忽略系统垃圾(.DS_Store 由首行兜底)
+datas/*
+!datas/*.md
+!datas/*.png
 doc/
 pmd-instances/
 

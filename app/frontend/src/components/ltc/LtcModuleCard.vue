@@ -1,17 +1,21 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useContactCache, displayName } from '../../composables/useContactCache.js'
+import { risksOf, subRiskOf } from '../../composables/useStatusHelpers.js'
 
 /**
  * LTC 看板模块卡(三级结构第二层)。
- * 模块名背景按 module_color 上色;头部右上角显示 Owner(对齐设计稿);
- * 下方一排子项色块;点击子项触发 emit('edit-sub', sub)。
+ * 单卡承载两段(由 showBoard/showRisk 控制显隐,差异通过 props 表达):
+ *   - 看板段:模块名色块 + 一排子项色块
+ *   - 风险段:模块级风险 + 每个非绿(红/黄)子项一行
  * 与 PDT 看板的 ModuleCardGrid 独立(详见 CLAUDE.md 红线)。
  */
 const props = defineProps({
   module: { type: Object, required: true },
   entry: { type: Object, default: () => ({}) },
   canEdit: { type: Boolean, default: false },
+  showBoard: { type: Boolean, default: true },
+  showRisk: { type: Boolean, default: true },
 })
 const emit = defineEmits(['edit-sub', 'add-sub', 'edit-module-status', 'edit-module-structure'])
 
@@ -21,13 +25,23 @@ onMounted(() => { ensureContacts() })
 const moduleColor = computed(() => props.entry?.module_color || 'gray')
 const subColors = computed(() => props.entry?.sub_items_color || {})
 const subs = computed(() => (props.module.sub_items || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
-const riskNote = computed(() => (props.entry?.risk_note || '').trim())
 const ownerName = computed(() => {
   const oid = props.module?.owner_open_id
   if (!oid) return ''
   const u = (contacts.value || []).find(x => x.open_id === oid)
   return u?.name || displayName(oid) || ''
 })
+
+// 风险段数据:模块级风险行 + 非绿子项风险行
+const moduleRisks = computed(() => {
+  if (moduleColor.value === 'green' || moduleColor.value === 'gray') return []
+  return risksOf(props.entry)
+})
+const riskySubs = computed(() => subs.value
+  .filter(s => { const c = subColors.value[s.id]; return c === 'red' || c === 'yellow' })
+  .map(s => ({ sub: s, color: subColors.value[s.id], text: subRiskOf(props.entry, s.id) }))
+)
+const hasRiskContent = computed(() => moduleRisks.value.length > 0 || riskySubs.value.length > 0)
 
 function colorOf(sid) { return subColors.value[sid] || 'gray' }
 function tipOf(sub) {
@@ -58,8 +72,8 @@ function tipOf(sub) {
         @click.stop="emit('edit-module-structure')"
       >⚙</button>
     </header>
-    <p v-if="riskNote" class="risk-line" v-tooltip="'模块级风险说明'">{{ riskNote }}</p>
-    <div class="chips">
+    <!-- 看板段 -->
+    <div v-if="showBoard" class="chips">
       <button
         v-for="s in subs"
         :key="s.id"
@@ -78,6 +92,38 @@ function tipOf(sub) {
         @click="emit('add-sub')"
       >+ 子项</button>
       <span v-if="!subs.length && !canEdit" class="empty">无子项</span>
+    </div>
+
+    <!-- 分隔线:仅两段同显且风险段有内容时 -->
+    <div v-if="showBoard && showRisk && hasRiskContent" class="seg-divider"></div>
+
+    <!-- 风险段 -->
+    <div v-if="showRisk && hasRiskContent" class="risk-body">
+      <div v-if="moduleRisks.length" class="mod-risks">
+        <div
+          v-for="(r, i) in moduleRisks"
+          :key="`m-${i}`"
+          class="risk-line"
+          :class="`tone-${r.severity}`"
+          v-tooltip="'模块级风险说明'"
+        >
+          <span class="dot"></span>
+          <span class="txt">{{ r.text }}</span>
+        </div>
+      </div>
+      <div v-if="riskySubs.length" class="sub-risks">
+        <div v-for="item in riskySubs" :key="item.sub.id" class="sub-line">
+          <button
+            type="button"
+            class="chip"
+            :class="`tone-${item.color}`"
+            :disabled="!canEdit"
+            v-tooltip="tipOf(item.sub)"
+            @click="emit('edit-sub', item.sub)"
+          >{{ item.sub.name }}</button>
+          <span class="sub-text">{{ item.text || '(未填写风险说明)' }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -132,14 +178,6 @@ function tipOf(sub) {
 .cog:hover { opacity: 1; background: rgba(255,255,255,0.55); }
 .title.tone-gray .cog:hover { background: var(--panel); }
 
-.risk-line {
-  margin: 0;
-  padding: 4px 10px 0;
-  font-size: 11.5px; line-height: 1.35;
-  color: var(--text-muted);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
 .chips {
   display: flex; flex-wrap: wrap; gap: 4px;
   padding: 6px 8px 8px;
@@ -168,5 +206,43 @@ function tipOf(sub) {
 .empty {
   font-size: 11.5px; color: var(--text-dim);
   padding: 6px 10px 8px;
+}
+
+/* 风险段 */
+.seg-divider {
+  height: 1px; margin: 0 10px;
+  background: var(--border-subtle);
+}
+.risk-body {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 8px 8px;
+}
+.mod-risks { display: flex; flex-direction: column; gap: 4px; }
+.risk-line {
+  display: flex; gap: 6px; align-items: flex-start;
+  font-size: 11.5px; line-height: 1.4;
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  background: var(--panel-soft);
+}
+.risk-line.tone-red { background: var(--status-red-bg); color: var(--status-red); }
+.risk-line.tone-yellow { background: var(--status-yellow-bg); color: var(--status-yellow); }
+.risk-line .dot {
+  width: 6px; height: 6px; border-radius: 2px;
+  display: inline-block; margin-top: 5px; flex-shrink: 0;
+}
+.risk-line.tone-red .dot { background: var(--status-red); }
+.risk-line.tone-yellow .dot { background: var(--status-yellow); }
+.risk-line .txt { word-break: break-word; }
+
+.sub-risks { display: flex; flex-direction: column; gap: 4px; }
+.sub-line {
+  display: grid; grid-template-columns: minmax(80px, auto) 1fr;
+  gap: 6px; align-items: start;
+}
+.sub-line .chip { align-self: start; }
+.sub-text {
+  font-size: 11.5px; line-height: 1.4;
+  color: var(--text); word-break: break-word;
 }
 </style>

@@ -120,8 +120,8 @@ PDT 总览与 LTC 看板形态不同,**互相解耦**,各自一套实现:
   - 唯一实现:`app/frontend/src/components/ModuleCardGrid.vue`(卡片网格) + `ModuleRiskList.vue`(风险列表)
   - 仅在 `PdtOverview.vue` 中 import;PDT 总览页内卡片与风险共用同一组件
 - **LTC 卡片(三级结构 Category → Module → Sub-item)**
-  - 唯一实现:`app/frontend/src/components/ltc/LtcCategoryGrid.vue` + `LtcModuleCard.vue` + `LtcRiskCard.vue` + `SubItemEditDialog.vue`
-  - 仅在 `LtcMain.vue` 中 import;LTC 内"看板"与"风险"由同一组件按 `mode='board'|'risk'|'both'` 切换渲染
+  - 唯一实现:`app/frontend/src/components/ltc/LtcCategoryGrid.vue` + `LtcModuleCard.vue` + `SubItemEditDialog.vue` + `ModuleStatusDialog.vue`
+  - 仅在 `LtcMain.vue` 中 import;LTC 内"看板"与"风险"**同卡两段**,由 `LtcModuleCard` 的 `showBoard`/`showRisk` props 按 `mode='board'|'risk'|'both'` 切换显隐(无独立风险卡)
 - **严禁跨用**:LTC 页不得 import `ModuleCardGrid.vue`,PDT 页不得 import `LtcCategoryGrid.vue` 或 `LtcModuleCard.vue`
 - 同一面板内(PDT 自身或 LTC 自身)看板与风险仍**共享单一组件**,差异通过 props/mode 表达;**不允许在外层页面内嵌写卡片 HTML/CSS**
 - 新增看板类型(如未来 PMO 总览)必须明确选择复用现有组件或新建独立组件;**不允许新增第三套与 PDT/LTC 重复的实现**

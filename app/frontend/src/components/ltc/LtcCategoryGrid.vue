@@ -5,7 +5,6 @@ import { useContactCache, displayName } from '../../composables/useContactCache.
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
 import LtcModuleCard from './LtcModuleCard.vue'
-import LtcRiskCard from './LtcRiskCard.vue'
 import SubItemEditDialog from './SubItemEditDialog.vue'
 import ModuleStatusDialog from './ModuleStatusDialog.vue'
 
@@ -46,21 +45,6 @@ function ownerLabel(openId) {
 function entryOf(module) {
   return status.value?.[props.statusKeyOf(module)] || {}
 }
-
-function hasRisk(module) {
-  const e = entryOf(module)
-  const mc = e?.module_color
-  if (mc === 'red' || mc === 'yellow') return true
-  for (const v of Object.values(e?.sub_items_color || {})) {
-    if (v === 'red' || v === 'yellow') return true
-  }
-  return false
-}
-
-const riskModulesByGroup = computed(() => grouped.value.map(g => ({
-  category: g.category,
-  modules: g.modules.filter(hasRisk),
-})))
 
 // ---- sub-item dialog (edit/create/delete) ----
 const editingSub = ref(null) // { module, sub | null }
@@ -126,8 +110,8 @@ const gridStyle = computed(() => {
       该 LTC 暂未配置大类(Category)。请按「设计 04 §5.5」从模板池初始化本 LTC。
     </div>
 
-    <!-- 看板段 -->
-    <section v-if="showBoard && totalCats" class="grid-section">
+    <!-- 看板/风险同卡:两段由 showBoard/showRisk 在卡内显隐 -->
+    <section v-if="totalCats" class="grid-section">
       <div class="grid" :style="gridStyle">
         <div v-for="g in grouped" :key="`b-${g.category?.id || '__uncat'}`" class="col">
           <header class="col-head">
@@ -141,6 +125,8 @@ const gridStyle = computed(() => {
             :module="m"
             :entry="entryOf(m)"
             :can-edit="canEditModuleStatus(statusKeyOf(m))"
+            :show-board="showBoard"
+            :show-risk="showRisk"
             @edit-sub="(s) => openSubEdit(m, s)"
             @add-sub="openSubCreate(m)"
             @edit-module-status="openModStatus(m)"
@@ -153,30 +139,6 @@ const gridStyle = computed(() => {
             v-tooltip="`在大类「${g.category?.name || '未分类'}」中新建一个本 LTC 模块`"
             @click="openNewMod(g.category)"
           >+ 新模块</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 风险段 -->
-    <section v-if="showRisk && totalCats" class="grid-section">
-      <div class="risk-banner">
-        风险详情 · 仅显示状态非绿的模块和子项
-      </div>
-      <div class="grid" :style="gridStyle">
-        <div v-for="g in riskModulesByGroup" :key="`r-${g.category?.id || '__uncat'}`" class="col">
-          <header class="col-head">
-            <span class="cat-name">{{ g.category?.name || '未分类' }}</span>
-            <span v-if="g.category" class="cat-owner">Owner · {{ ownerLabel(g.category.owner_open_id) }}</span>
-          </header>
-          <div v-if="!g.modules.length" class="col-empty all-green">本大类全绿</div>
-          <LtcRiskCard
-            v-for="m in g.modules"
-            :key="`r-mod-${m.id}`"
-            :module="m"
-            :entry="entryOf(m)"
-            :can-edit="canEditModuleStatus(statusKeyOf(m))"
-            @edit-sub="(s) => openSubEdit(m, s)"
-          />
         </div>
       </div>
     </section>
@@ -242,13 +204,6 @@ const gridStyle = computed(() => {
 }
 
 .grid-section { display: flex; flex-direction: column; gap: 8px; }
-.risk-banner {
-  font-size: 12px; color: var(--text-muted);
-  padding: 4px 8px;
-  background: var(--status-yellow-bg);
-  border-radius: var(--radius);
-  width: fit-content;
-}
 
 .grid {
   display: grid;
@@ -276,7 +231,6 @@ const gridStyle = computed(() => {
   padding: 6px 4px;
   font-style: italic;
 }
-.col-empty.all-green { color: var(--status-green); font-style: normal; }
 
 .add-mod-tile {
   margin-top: 4px;

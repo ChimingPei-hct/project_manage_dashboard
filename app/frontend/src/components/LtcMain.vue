@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
 import { useView } from '../composables/useView.js'
 import { useAuth } from '../composables/useAuth.js'
@@ -37,8 +37,15 @@ const canEnterLtcAdmin = computed(() => {
   return (ltcMap[currentLtcId.value] || []).includes(u.open_id)
 })
 
+/* 编辑模式:默认关闭(纯查看)。开启后才暴露所有就地编辑入口
+   (sub chip 可点、模块头可点、⚙、+ 子项、+ 新模块)。切换 LTC 自动退出编辑。 */
+const editMode = ref(false)
+watch(currentLtcId, () => { editMode.value = false })
+const canManageStructure = computed(() => canEnterLtcAdmin.value && !isReadonly.value && editMode.value)
+
 function ltcStatusKey(m) { return statusKeyOf(m, currentLtcId.value) }
 function canEditStatusKey(key) {
+  if (!editMode.value) return false
   if (!key) return false
   const sep = '::'
   let ltcId = ''
@@ -130,6 +137,12 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
               class="tool-btn"
+              :class="{ 'edit-on': editMode }"
+              v-tooltip="editMode ? '退出编辑模式(隐藏增删入口)' : '进入编辑模式(显示子项/模块增删入口)'"
+              @click="editMode = !editMode"
+            >{{ editMode ? '✓ 完成编辑' : '✏️ 编辑' }}</button>
+            <button
+              class="tool-btn"
               v-tooltip="'编辑本 LTC 基础信息、时间线与模块清单'"
               @click="openAdminTool('ltc-base')"
             >⚙ LTC 配置</button>
@@ -155,7 +168,7 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           :mode="viewMode"
           :status-key-of="ltcStatusKey"
           :can-edit-module-status="canEditStatusKey"
-          :can-enter-admin="canEnterLtcAdmin && !isReadonly"
+          :can-enter-admin="canManageStructure"
           @pick-module="pickModule"
         />
       </section>
@@ -260,6 +273,12 @@ h1 {
   color: var(--accent);
   border-color: var(--accent);
   background: var(--panel);
+}
+.admin-tools .tool-btn.edit-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft, var(--panel));
+  font-weight: 600;
 }
 
 .timeline-section, .grid-wrap { padding: 0 24px; }
