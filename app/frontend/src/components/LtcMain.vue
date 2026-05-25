@@ -14,7 +14,6 @@ import Modal from './harness/Modal.vue'
 import LtcDrawer from './admin/LtcDrawer.vue'
 import ModuleDrawer from './admin/ModuleDrawer.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
-import CategoriesDrawer from './admin/CategoriesDrawer.vue'
 
 const { ltcs, status, ltcVisibleModules, statusKeyOf, isReadonly } = useDashboard()
 const { current, pushView } = useView()
@@ -82,7 +81,7 @@ function toggleRisk() {
   showRisk.value = !showRisk.value
 }
 
-const showAdminTool = ref('') // '' | 'ltc-base' | 'snapshots' | 'categories'
+const showAdminTool = ref('') // '' | 'ltc-base' | 'snapshots'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
 
@@ -131,11 +130,6 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
               class="tool-btn"
-              v-tooltip="'编辑大类(Category)清单与负责人'"
-              @click="openAdminTool('categories')"
-            >🗂 大类</button>
-            <button
-              class="tool-btn"
               v-tooltip="'编辑本 LTC 基础信息、时间线与模块清单'"
               @click="openAdminTool('ltc-base')"
             >⚙ LTC 配置</button>
@@ -161,6 +155,8 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           :mode="viewMode"
           :status-key-of="ltcStatusKey"
           :can-edit-module-status="canEditStatusKey"
+          :can-enter-admin="canEnterLtcAdmin && !isReadonly"
+          @pick-module="pickModule"
         />
       </section>
     </div>
@@ -175,9 +171,6 @@ function closeModuleDrawer() { editingModuleId.value = '' }
     </Modal>
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
-    </Modal>
-    <Modal :open="showAdminTool === 'categories'" :title="`大类配置 · ${currentLtc?.name || ''}`" width="640px" @close="closeAdminTool">
-      <CategoriesDrawer v-if="currentLtcId" :ltc-id="currentLtcId" />
     </Modal>
     <Modal :open="!!editingModuleId" title="模块详情" width="880px" @close="closeModuleDrawer">
       <ModuleDrawer v-if="editingModuleId" :key="editingModuleId" :module-id="editingModuleId" @deleted="closeModuleDrawer" />

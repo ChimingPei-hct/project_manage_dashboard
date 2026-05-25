@@ -21,9 +21,9 @@ const sortedLtcs = computed(() =>
 const canCreateLtc = computed(() => !!(me.value && (me.value.is_super || me.value.is_pdt_admin)))
 
 function ltcModuleCount(ltcId) {
-  const tpl = (modulesByScope.value.ltc_template || []).length
-  const own = (modulesByScope.value.ltc[ltcId] || []).length
-  return tpl + own
+  // 仅统计本 LTC 自有副本(scope=ltc & ltc_id),与主视图 ltcVisibleModules 一致。
+  // 模板池(scope=ltc_template)不再混入。
+  return (modulesByScope.value.ltc[ltcId] || []).length
 }
 
 const showCreate = ref(false)

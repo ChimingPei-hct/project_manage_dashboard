@@ -2,24 +2,32 @@
 import { computed, ref, watch } from 'vue'
 import { api } from '../../api/client.js'
 import { useDashboard } from '../../composables/useDashboard.js'
+import { adminApi, newId } from '../../composables/useAdminApi.js'
 
 /**
- * 子项色块编辑弹窗。
- * 仅允许编辑单个 sub_item 的 color + risk_text;读取当前 entry 后做全量 PUT(design/07 §8 禁止 PATCH 单字段)。
+ * 子项色块 编辑/新建/删除 弹窗。
+ * - 编辑态(subItem != null):改 color + risk_text,全量 PUT status
+ * - 新建态(subItem == null):输入名称 → PUT module 追加 sub_items → 同时 PUT status 上色
+ * - 删除态(编辑态点「删除」):PUT module 移除该 sub + PUT status 清理对应 color/risk
+ * 全部走 design/07 §8 的全量 PUT(禁 PATCH 单字段)。
  */
 const props = defineProps({
   open: { type: Boolean, default: false },
   module: { type: Object, default: null },
-  subItem: { type: Object, default: null },
+  subItem: { type: Object, default: null }, // null = 新建态
   statusKey: { type: String, default: '' },
   canEdit: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'saved'])
 
 const { status, refresh } = useDashboard()
+const isCreate = computed(() => !props.subItem)
+const subName = ref('')
 const color = ref('green')
 const riskText = ref('')
 const saving = ref(false)
+const deleting = ref(false)
+const confirmDel = ref(false)
 const errorMsg = ref('')
 
 const COLORS = [
@@ -30,10 +38,18 @@ const COLORS = [
 
 function reset() {
   const entry = status.value?.[props.statusKey] || {}
-  const sid = props.subItem?.id
-  color.value = entry.sub_items_color?.[sid] || 'green'
-  riskText.value = entry.sub_items_risk?.[sid] || ''
+  if (isCreate.value) {
+    subName.value = ''
+    color.value = 'green'
+    riskText.value = ''
+  } else {
+    const sid = props.subItem.id
+    subName.value = props.subItem.name || ''
+    color.value = entry.sub_items_color?.[sid] || 'green'
+    riskText.value = entry.sub_items_risk?.[sid] || ''
+  }
   errorMsg.value = ''
+  confirmDel.value = false
 }
 
 watch(() => [props.open, props.statusKey, props.subItem?.id], () => {
@@ -42,39 +58,95 @@ watch(() => [props.open, props.statusKey, props.subItem?.id], () => {
 
 const requireRisk = computed(() => color.value !== 'green')
 const canSave = computed(() => {
-  if (!props.canEdit || saving.value) return false
+  if (!props.canEdit || saving.value || deleting.value) return false
+  if (isCreate.value && !subName.value.trim()) return false
   if (requireRisk.value && !riskText.value.trim()) return false
   return true
 })
 
+function moduleBody(overrideSubs) {
+  const m = props.module
+  return {
+    name: m.name,
+    group: m.group,
+    category_id: m.category_id || null,
+    owner_open_id: m.owner_open_id || null,
+    kpi_fields: m.kpi_fields || [],
+    sub_items: overrideSubs,
+  }
+}
+
+async function putStatus(sub_items_color, sub_items_risk) {
+  const entry = status.value?.[props.statusKey] || {}
+  await api.put(`/api/status/${encodeURIComponent(props.statusKey)}`, {
+    module_color: entry.module_color || 'green',
+    sub_items_color,
+    sub_items_risk,
+    kpi_values: entry.kpi_values || {},
+    risk_note: entry.risk_note || '',
+  })
+}
+
 async function save() {
   errorMsg.value = ''
-  if (!props.canEdit) return
+  if (!canSave.value) return
   saving.value = true
   try {
     const entry = status.value?.[props.statusKey] || {}
-    const sid = props.subItem.id
-    const sub_items_color = { ...(entry.sub_items_color || {}), [sid]: color.value }
+    let targetSid
+    if (isCreate.value) {
+      const newSub = {
+        id: newId().slice(0, 12),
+        name: subName.value.trim(),
+        order: (props.module.sub_items || []).length + 1,
+        owner_open_id: null,
+        risk_note: '',
+      }
+      const subs = [...(props.module.sub_items || []), newSub]
+      await adminApi.updateModule(props.module.id, moduleBody(subs))
+      targetSid = newSub.id
+    } else {
+      targetSid = props.subItem.id
+    }
+    const sub_items_color = { ...(entry.sub_items_color || {}), [targetSid]: color.value }
     const sub_items_risk = { ...(entry.sub_items_risk || {}) }
     const t = riskText.value.trim()
-    if (t) sub_items_risk[sid] = t
-    else delete sub_items_risk[sid]
-    await api.put(`/api/status/${encodeURIComponent(props.statusKey)}`, {
-      module_color: entry.module_color || 'green',
-      sub_items_color,
-      sub_items_risk,
-      kpi_items: entry.kpi_items || [],
-      risks: entry.risks || [],
-      risk_note: entry.risk_note || '',
-    })
+    if (t) sub_items_risk[targetSid] = t
+    else delete sub_items_risk[targetSid]
+    await putStatus(sub_items_color, sub_items_risk)
     await refresh()
     emit('saved')
     emit('close')
   } catch (e) {
-    if (e.status === 403) errorMsg.value = '无权编辑该子项'
+    if (e.status === 403) errorMsg.value = '无权操作该子项'
     else errorMsg.value = e.payload?.detail || e.message || '保存失败'
   } finally {
     saving.value = false
+  }
+}
+
+async function doDelete() {
+  errorMsg.value = ''
+  if (!props.canEdit || isCreate.value) return
+  deleting.value = true
+  try {
+    const sid = props.subItem.id
+    const subs = (props.module.sub_items || []).filter(s => s.id !== sid)
+    await adminApi.updateModule(props.module.id, moduleBody(subs))
+    const entry = status.value?.[props.statusKey] || {}
+    const sub_items_color = { ...(entry.sub_items_color || {}) }
+    const sub_items_risk = { ...(entry.sub_items_risk || {}) }
+    delete sub_items_color[sid]
+    delete sub_items_risk[sid]
+    await putStatus(sub_items_color, sub_items_risk)
+    await refresh()
+    emit('saved')
+    emit('close')
+  } catch (e) {
+    errorMsg.value = e.payload?.detail || e.message || '删除失败'
+  } finally {
+    deleting.value = false
+    confirmDel.value = false
   }
 }
 
@@ -86,11 +158,21 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
     <div class="box" role="dialog">
       <header class="head">
         <div>
-          <h3>{{ subItem?.name || '子项' }}</h3>
+          <h3>{{ isCreate ? '新增子项' : (subItem?.name || '子项') }}</h3>
           <p class="sub">{{ module?.name || '' }}</p>
         </div>
         <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃修改'">×</button>
       </header>
+
+      <section v-if="isCreate" class="block">
+        <div class="block-title">子项名称</div>
+        <input
+          v-model="subName"
+          maxlength="40"
+          placeholder="如:RTE、AEB、定位融合"
+          v-tooltip="'新子项的显示名(不超过 40 字)'"
+        />
+      </section>
 
       <section class="block">
         <div class="block-title">状态灯</div>
@@ -127,14 +209,34 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
       <p v-if="errorMsg" class="err-banner">{{ errorMsg }}</p>
 
       <footer class="foot">
-        <button @click="emit('close')" v-tooltip="'放弃修改'">取消</button>
         <button
-          class="primary"
-          :disabled="!canSave"
-          v-tooltip="canEdit ? '保存子项状态与风险说明' : '当前账号无编辑权限'"
-          @click="save"
-        >{{ saving ? '保存中…' : '保存' }}</button>
+          v-if="!isCreate && canEdit"
+          class="danger"
+          :disabled="deleting || saving"
+          v-tooltip="'从本模块移除此子项(同时清掉它的颜色和风险记录)'"
+          @click="confirmDel = true"
+        >删除子项</button>
+        <div class="foot-right">
+          <button @click="emit('close')" v-tooltip="'放弃修改'">取消</button>
+          <button
+            class="primary"
+            :disabled="!canSave"
+            v-tooltip="canEdit ? (isCreate ? '创建子项并保存状态' : '保存子项状态与风险说明') : '当前账号无编辑权限'"
+            @click="save"
+          >{{ saving ? '保存中…' : (isCreate ? '创建' : '保存') }}</button>
+        </div>
       </footer>
+
+      <div v-if="confirmDel" class="confirm-mask" @click.self="confirmDel = false">
+        <div class="confirm-box">
+          <p>确认删除子项「{{ subItem?.name }}」?</p>
+          <p class="hint">此操作会从模块的 sub_items 中移除,并清理其颜色/风险记录(历史快照不变)。</p>
+          <div class="foot-right">
+            <button @click="confirmDel = false">取消</button>
+            <button class="danger" :disabled="deleting" @click="doDelete">{{ deleting ? '删除中…' : '确认删除' }}</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -148,7 +250,7 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
 .box {
   background: var(--panel); border-radius: var(--radius);
   padding: 18px 22px; min-width: 420px; max-width: 540px; width: 92vw;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-lg); position: relative;
 }
 .head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
 h3 { margin: 0; font-size: 15px; font-weight: 700; }
@@ -163,6 +265,12 @@ h3 { margin: 0; font-size: 15px; font-weight: 700; }
   margin-bottom: 6px;
 }
 .req { font-size: 11px; color: var(--status-red); font-weight: 500; }
+
+input {
+  width: 100%; font-size: 13px; padding: 6px 10px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel); font-family: inherit;
+}
 
 .color-row { display: flex; gap: 6px; }
 .swatch {
@@ -179,14 +287,37 @@ textarea {
   background: var(--panel); resize: vertical; min-height: 64px;
   font-family: inherit;
 }
-.hint { font-size: 11px; padding: 4px 0 0; margin: 0; }
+.hint { font-size: 11px; padding: 4px 0 0; margin: 0; color: var(--text-muted); }
 .hint.err { color: var(--status-red); }
 .err-banner {
   background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30);
   color: var(--status-red); padding: 6px 10px; border-radius: var(--radius);
   font-size: 12px; margin: 0 0 10px;
 }
-.foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+.foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding-top: 10px; border-top: 1px solid var(--border-subtle);
+}
+.foot-right { display: flex; gap: 8px; }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.danger {
+  background: transparent; color: var(--status-red);
+  border: 1px solid var(--status-red); border-radius: var(--radius);
+  padding: 4px 12px; font-size: 12.5px; cursor: pointer;
+}
+.danger:disabled { opacity: 0.55; cursor: not-allowed; }
+.danger:hover:not(:disabled) { background: var(--status-red-bg); }
+
+.confirm-mask {
+  position: absolute; inset: 0; background: rgba(15,23,42,0.55);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius);
+}
+.confirm-box {
+  background: var(--panel); border-radius: var(--radius);
+  padding: 16px 18px; width: 88%; max-width: 380px;
+  box-shadow: var(--shadow-lg);
+}
+.confirm-box p { margin: 0 0 8px; font-size: 13px; }
 </style>

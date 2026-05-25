@@ -64,12 +64,14 @@ const modulesByScope = computed(() => {
   return groups
 })
 
-/** 给定 LTC 在主页面展示的全部模块(模板 + 自有增量),按 order 升序。 */
+/** 给定 LTC 在主页面展示的模块:仅返回该 LTC 自有副本(scope=ltc & ltc_id=ltcId)。
+ *  模板池(scope=ltc_template)不直接展示,需通过「新建 LTC → 从模板池初始化」
+ *  深拷贝为本 LTC 副本(详见 design/04 §5.5)。历史 LTC 若未初始化,主页会空,
+ *  需手动调 POST /api/ltc/{id}/init-from-template 补齐。 */
 function ltcVisibleModules(ltcId) {
   if (!ltcId) return []
-  const tpl = modulesByScope.value.ltc_template || []
   const own = modulesByScope.value.ltc[ltcId] || []
-  return [...tpl, ...own].slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  return own.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 }
 
 /** 给定模块在某 LTC 上下文中的 status key:模板模块需复合键,其他用 module.id。 */
