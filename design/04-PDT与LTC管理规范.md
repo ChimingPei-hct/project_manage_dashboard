@@ -148,6 +148,8 @@
   - **新 ID**:`<原模板 id>--<ltc_id>`,所有 module 的 `category_id` 同步重写到新 category id
   - **重置元数据**:`created_at` / `updated_at` 取当前时间,`owner_open_id` 沿用模板(模板本身应不带 Owner)
 - 前置检查:本 LTC 已存在任意 `scope=ltc` category 或 module → 409(不做合并/增量同步);如需重置,先手动清空再调用
+- **LTC 主页前端只渲染 `scope=ltc & ltc_id=本LTC` 的副本**(`useDashboard.ltcVisibleModules`);**严禁**把 `scope=ltc_template` 的模板模块虚拟混入 LTC 视图,否则会出现"模板模块挂不上本 LTC 大类 → 全部塌到未分类"的视觉异常
+- 历史(在本约束生效前手工建出的)LTC 若未初始化,主页将为空 → 必须手动调 `init-from-template` 补齐;裸建(无大类副本)的 LTC 视为数据异常
 - 不在范围:模板版本号 / 副本与模板的 diff 视图 / LTC 重置端点 → 后续按需扩展
 
 ## 6. 禁止项
