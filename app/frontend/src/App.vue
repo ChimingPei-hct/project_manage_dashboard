@@ -106,11 +106,16 @@ onMounted(async () => {
   </div>
   <div v-else class="layout">
     <header class="topbar">
-      <div class="brand" v-tooltip="(pdt?.name ? pdt.name + ' · ' : '') + '产品线项目看板'">
+      <button
+        type="button"
+        class="brand"
+        v-tooltip="(pdt?.name ? pdt.name + ' · ' : '') + '返回 PDT 总览'"
+        @click="nav('pdt')"
+      >
         <img v-if="pdtIconUrl" :src="pdtIconUrl" class="brand-logo" alt="" />
         <span v-else class="brand-emoji">📊</span>
         <span class="brand-text">{{ pdt?.name || 'PMD' }}</span>
-      </div>
+      </button>
       <nav>
         <button
           v-for="n in navItems"
@@ -161,7 +166,15 @@ onMounted(async () => {
   z-index: 50;
   backdrop-filter: blur(8px);
 }
-.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; letter-spacing: -0.2px; }
+.brand {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 700; font-size: 16px; letter-spacing: -0.2px;
+  background: transparent; border: none; padding: 4px 6px;
+  border-radius: var(--radius); cursor: pointer;
+  font-family: inherit; color: inherit;
+  transition: background var(--transition);
+}
+.brand:hover { background: var(--panel-soft); }
 .brand-emoji { font-size: 16px; }
 .brand-logo { width: 24px; height: 24px; border-radius: 6px; display: block; object-fit: contain; }
 .brand-text {
