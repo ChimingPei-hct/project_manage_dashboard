@@ -103,6 +103,7 @@ function render() {
       showCurrentTime: true,
       showMajorLabels: true,
       showMinorLabels: true,
+      height: '100%',
       zoomMin: 1000 * 60 * 60 * 24 * 14,
       zoomMax: 1000 * 60 * 60 * 24 * 365 * 6,
       start, end,
@@ -151,11 +152,27 @@ watch(() => props.milestones, render, { deep: true })
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 8px 12px 12px;
-  margin: 0 24px 16px;
+  box-shadow: var(--shadow-md);
+  padding: 14px 18px 14px;
+  margin: 0 24px 18px;
+  transition: box-shadow var(--transition);
+  display: flex;
+  flex-direction: column;
+  animation: tl-fade-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; text-align: center; }
-.vis-host { width: 100%; min-height: 160px; }
+.timeline-wrap:hover { box-shadow: var(--shadow-lg); }
+.empty { color: var(--text-muted); font-size: 14px; padding: 48px 0; text-align: center; }
+/* vis-host 固定撑满 viewport 剩余高度,vis-timeline 内部按 group 内容比例自动分配
+   180px ≈ topbar(52) + page-header(64) + wrap padding/margin/border(~64) */
+.vis-host {
+  width: 100%;
+  height: calc(100vh - 180px);
+  min-height: 420px;
+}
+@keyframes tl-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 <style>

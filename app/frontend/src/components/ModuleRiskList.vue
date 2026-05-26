@@ -169,25 +169,38 @@ const editingStatus = computed(() => editing.value ? statusOf(editing.value) || 
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+  padding: 22px 18px 14px;
+  box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
+  transition:
+    box-shadow var(--transition),
+    transform var(--transition),
+    border-color var(--transition),
+    background var(--transition);
 }
 .card::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
+  left: 0; right: 0; top: 0;
+  height: 4px;
   background: var(--status-gray);
 }
-.card.tone-red::before { background: var(--status-red); }
+.card.tone-green  { background: linear-gradient(180deg, var(--status-green-bg) 0%, var(--panel) 96px); }
+.card.tone-yellow { background: linear-gradient(180deg, var(--status-yellow-bg) 0%, var(--panel) 96px); }
+.card.tone-red    { background: linear-gradient(180deg, var(--status-red-bg) 0%, var(--panel) 96px); }
+.card.tone-red::before    { background: var(--status-red); }
 .card.tone-yellow::before { background: var(--status-yellow); }
-.card.tone-green::before { background: var(--status-green); }
+.card.tone-green::before  { background: var(--status-green); }
+.card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+}
 
-.card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; gap: 8px; }
-.m-name { font-weight: 700; font-size: 16px; }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; gap: 8px; }
+.m-name { font-weight: 600; font-size: 17px; color: var(--text-strong); letter-spacing: 0.4px; }
 .m-owner { font-size: 11px; color: var(--text-muted); }
 
 .m-risks { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
