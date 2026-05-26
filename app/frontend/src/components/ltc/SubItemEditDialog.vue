@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { api } from '../../api/client.js'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
+import { useEscClose } from '../../composables/useEscClose.js'
 
 /**
  * 子项色块 编辑/新建/删除 弹窗。
@@ -19,6 +20,8 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'saved'])
+
+useEscClose(toRef(props, 'open'), () => emit('close'))
 
 const { status, refresh } = useDashboard()
 const isCreate = computed(() => !props.subItem)
