@@ -11,13 +11,23 @@ from __future__ import annotations
 
 import asyncio
 import copy
-import fcntl
 import json
 import os
 import re
 import secrets
+import sys
+import tempfile
 import time
 import uuid
+
+# 跨平台文件锁:POSIX 用 fcntl.flock,Windows 用 msvcrt.locking
+# 详见 design/11 §5.2
+if sys.platform == "win32":
+    import msvcrt
+    fcntl = None  # type: ignore
+else:
+    import fcntl  # type: ignore
+    msvcrt = None  # type: ignore
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -86,7 +96,7 @@ _FEISHU_USER_INFO = "https://open.feishu.cn/open-apis/authen/v1/user_info"
 # 文件 I/O 工具(fcntl.flock + 原子 rename,详见 design/11 §5.2)
 # ---------------------------------------------------------------------------
 
-_LOCK_DIR = Path("/tmp") / f"pmd-locks-{os.getuid()}"
+_LOCK_DIR = Path(tempfile.gettempdir()) / f"pmd-locks-{os.getlogin() if sys.platform == 'win32' else os.getuid()}"
 _LOCK_DIR.mkdir(exist_ok=True)
 
 
@@ -110,19 +120,40 @@ _LOCKS: dict[str, int] = {
 }
 
 
+def _flock_acquire(fd: int) -> None:
+    """跨平台独占锁。POSIX:fcntl.flock;Windows:msvcrt.locking。"""
+    if sys.platform == "win32":
+        # msvcrt.locking 锁的是当前文件指针处的 N 字节;统一从偏移 0 锁 1 字节
+        os.lseek(fd, 0, os.SEEK_SET)
+        msvcrt.locking(fd, msvcrt.LK_LOCK, 1)  # type: ignore[union-attr]
+    else:
+        fcntl.flock(fd, fcntl.LOCK_EX)  # type: ignore[union-attr]
+
+
+def _flock_release(fd: int) -> None:
+    if sys.platform == "win32":
+        try:
+            os.lseek(fd, 0, os.SEEK_SET)
+            msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)  # type: ignore[union-attr]
+        except OSError:
+            pass
+    else:
+        fcntl.flock(fd, fcntl.LOCK_UN)  # type: ignore[union-attr]
+
+
 class _FileLock:
     def __init__(self, *names: str):
         self.fds = [_LOCKS[n] for n in names]
 
     def __enter__(self):
         for fd in self.fds:
-            fcntl.flock(fd, fcntl.LOCK_EX)
+            _flock_acquire(fd)
         return self
 
     def __exit__(self, *exc):
         for fd in self.fds:
             try:
-                fcntl.flock(fd, fcntl.LOCK_UN)
+                _flock_release(fd)
             except Exception:  # pragma: no cover
                 pass
 
@@ -944,7 +975,7 @@ async def api_init_ltc_from_template(ltc_id: str, request: Request):
         raise HTTPException(403, "forbidden")
     if not any(l["id"] == ltc_id for l in read_ltcs()):
         raise HTTPException(404, f"ltc_id {ltc_id} not found")
-    with _FileLock("modules", "categories"):
+    with _FileLock("modules", "categories", "status", "updates"):
         cats = read_categories()
         mods = read_modules()
         if any(c.get("scope") == "ltc" and c.get("ltc_id") == ltc_id for c in cats):
@@ -957,10 +988,10 @@ async def api_init_ltc_from_template(ltc_id: str, request: Request):
         id_map: dict[str, str] = {}
         new_cats: list[dict] = []
         for c in tpl_cats:
-            new_id = f"{c['id']}--{ltc_id}"
-            id_map[c["id"]] = new_id
+            cat_new_id = f"{c['id']}--{ltc_id}"
+            id_map[c["id"]] = cat_new_id
             row = copy.deepcopy(c)
-            row["id"] = new_id
+            row["id"] = cat_new_id
             row["scope"] = "ltc"
             row["ltc_id"] = ltc_id
             row["created_at"] = ts
@@ -969,9 +1000,9 @@ async def api_init_ltc_from_template(ltc_id: str, request: Request):
             new_cats.append(row)
         new_mods: list[dict] = []
         for m in tpl_mods:
-            new_id = f"{m['id']}--{ltc_id}"
+            mod_new_id = f"{m['id']}--{ltc_id}"
             row = copy.deepcopy(m)
-            row["id"] = new_id
+            row["id"] = mod_new_id
             row["scope"] = "ltc"
             row["ltc_id"] = ltc_id
             old_cat = row.get("category_id")
@@ -982,11 +1013,42 @@ async def api_init_ltc_from_template(ltc_id: str, request: Request):
             new_mods.append(row)
         write_categories(cats + new_cats)
         write_modules(mods + new_mods)
+        # 种子默认状态:每个新副本模块 module_color=green,sub_items_color 全 green
+        # 语义:init-from-template 视为 LTC 管理员"显式声明 OK 起步",不是"未填报"
+        # 详见 design/04 §5.5
+        status = read_status()
+        for m in new_mods:
+            sub_colors = {s["id"]: "green" for s in m.get("sub_items") or [] if s.get("id")}
+            status[m["id"]] = {
+                "module_color": "green",
+                "risk_note": "",
+                "kpi_values": {},
+                "kpi_items": [],
+                "risks": [],
+                "sub_items_color": sub_colors,
+                "sub_items_risk": {},
+                "updated_by": oid,
+                "updated_at": ts,
+                "metadata": {"seeded_by": "init-from-template"},
+            }
+            _append_jsonl("module_updates.jsonl", {
+                "id": new_id(),
+                "ts": ts,
+                "module_id": m["id"],
+                "kind": "status_seeded",
+                "before": None,
+                "after": status[m["id"]],
+                "updated_by": oid,
+                "client": "init-from-template",
+            })
+        write_status(status)
     await _broadcast("config:reload", {"kind": "categories"})
     await _broadcast("config:reload", {"kind": "modules"})
+    await _broadcast("status:reload", {"ltc_id": ltc_id})
     return {
         "copied_categories": len(new_cats),
         "copied_modules": len(new_mods),
+        "seeded_status": len(new_mods),
     }
 
 

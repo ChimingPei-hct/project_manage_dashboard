@@ -20,7 +20,7 @@
 - ❌ Hardcode 状态色(必须用 `--status-green/yellow/red` CSS 变量)
 - ❌ 跳过 `v-tooltip` 直接 `title=""`(`title` 仅作长说明兜底)
 - ❌ 在组件内直接 `fetch`(走 `api/client.js`)
-- ❌ 给"未填报"赋绿/黄/红色(用灰)
+- ❌ 给"未填报"赋绿/黄/红色(用灰)。例外:`init-from-template` 已为新副本种子化 `module_color=green` + `sub_items_color={...:"green"}`,这种"已显式写入 green"的情况按正常 green 渲染,不属于"未填报"(详见 design/04 §5.5)
 - ❌ PDT 看板/风险页内嵌写卡片渲染 — 必须 import `ModuleCardGrid.vue` / `ModuleRiskList.vue`(PDT 唯一实现)
 - ❌ LTC 看板/风险页内嵌写卡片渲染 — 必须 import `ltc/LtcCategoryGrid.vue`(LTC 唯一实现,内部封装看板/风险/子项编辑)
 - ❌ PDT 页 import LTC 卡片组件,或 LTC 页 import PDT 卡片组件(两者解耦,详见根 CLAUDE.md "看板卡片解耦约束")
