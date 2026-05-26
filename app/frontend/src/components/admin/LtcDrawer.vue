@@ -1,7 +1,10 @@
 <script setup>
-/* 单个 LTC 详细抽屉:基础信息 + 该 LTC 下模块快速管理(新增模块 + 链接到模块详情) */
+/* 单个 LTC 详细抽屉:基础信息 + 该 LTC 下模块树形管理。
+ * 模块清单按 大类(category) → 模块(module) → 子项(sub_item) 三级树渲染。
+ * 详见 design/13 §LTC 配置抽屉。 */
 import { computed, onMounted, ref, watch } from 'vue'
 import { useDashboard } from '../../composables/useDashboard.js'
+import { useCategories } from '../../composables/useCategories.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
 import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import ConfirmDialog from '../harness/ConfirmDialog.vue'
@@ -11,14 +14,27 @@ const props = defineProps({ ltcId: { type: String, required: true } })
 const emit = defineEmits(['pick-module', 'deleted'])
 
 const { ltcs, modules, refresh } = useDashboard()
+const { groupedForLtc, reload: reloadCats } = useCategories()
 const { ensureContacts } = useContactCache()
-onMounted(() => { ensureContacts() })
+onMounted(() => { ensureContacts(); reloadCats() })
 const ltc = computed(() => (ltcs.value || []).find(l => l.id === props.ltcId))
 const mods = computed(() =>
   (modules.value || [])
     .filter(m => m.scope === 'ltc' && m.ltc_id === props.ltcId)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 )
+const grouped = computed(() => groupedForLtc(props.ltcId, mods.value))
+
+// 折叠状态:Map<key, collapsed?> — 大类 key = "cat:<id>",模块 key = "mod:<id>";默认大类展开、模块折叠
+const collapsed = ref({})
+function catKey(c) { return c ? `cat:${c.id}` : 'cat:_orphan_' }
+function modKey(m) { return `mod:${m.id}` }
+function isCollapsed(key, defaultCollapsed = false) {
+  return key in collapsed.value ? collapsed.value[key] : defaultCollapsed
+}
+function toggle(key, defaultCollapsed = false) {
+  collapsed.value = { ...collapsed.value, [key]: !isCollapsed(key, defaultCollapsed) }
+}
 
 const draft = ref({ name: '' })
 const dirty = ref(false)
@@ -129,21 +145,60 @@ async function toggleArchive() {
         >+ 添加模块</button>
       </div>
       <div v-if="!mods.length" class="hint">该 LTC 下还没有模块</div>
-      <div v-else class="mod-list">
-        <button
-          v-for="m in mods"
-          :key="m.id"
-          type="button"
-          class="mod-item"
-          v-tooltip="'点击进入该模块的详细编辑'"
-          @click="emit('pick-module', m.id)"
-        >
-          <span class="g">[{{ m.group }}]</span>
-          <span class="n">{{ m.name }}</span>
-          <span class="sub-count">{{ (m.sub_items || []).length }} 子项</span>
-          <span class="kpi-count">{{ (m.kpi_fields || []).length }} KPI</span>
-          <OwnerChip :open-id="m.owner_open_id" fallback="未指派" />
-        </button>
+      <div v-else class="tree">
+        <div v-for="g in grouped" :key="catKey(g.category)" class="tree-cat">
+          <button
+            type="button"
+            class="row cat-row"
+            v-tooltip="'折叠/展开本大类'"
+            @click="toggle(catKey(g.category), false)"
+          >
+            <span class="caret">{{ isCollapsed(catKey(g.category), false) ? '▶' : '▼' }}</span>
+            <span class="cat-name">{{ g.category?.name || '未分类' }}</span>
+            <span class="badge">{{ g.modules.length }} 模块</span>
+          </button>
+          <div v-show="!isCollapsed(catKey(g.category), false)" class="cat-body">
+            <div v-if="!g.modules.length" class="empty-cat">本大类下暂无模块</div>
+            <template v-else>
+              <div v-for="m in g.modules" :key="m.id" class="tree-mod">
+                <div class="row mod-row">
+                  <button
+                    type="button"
+                    class="caret-btn"
+                    v-tooltip="(m.sub_items || []).length ? '展开/折叠子项' : '此模块暂无子项'"
+                    :disabled="!(m.sub_items || []).length"
+                    @click.stop="toggle(modKey(m), true)"
+                  >
+                    {{ (m.sub_items || []).length
+                      ? (isCollapsed(modKey(m), true) ? '▶' : '▼')
+                      : '·' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="mod-link"
+                    v-tooltip="'点击进入该模块的详细编辑'"
+                    @click="emit('pick-module', m.id)"
+                  >
+                    <span class="mod-name">{{ m.name }}</span>
+                    <span class="mod-meta">{{ (m.sub_items || []).length }} 子项 · {{ (m.kpi_fields || []).length }} KPI</span>
+                  </button>
+                  <OwnerChip :open-id="m.owner_open_id" fallback="未指派" />
+                </div>
+                <div
+                  v-if="(m.sub_items || []).length && !isCollapsed(modKey(m), true)"
+                  class="sub-list"
+                >
+                  <span
+                    v-for="s in m.sub_items"
+                    :key="s.id"
+                    class="sub-chip"
+                    v-tooltip="s.risk_note || s.name"
+                  >{{ s.name }}</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -175,26 +230,100 @@ h2 { margin: 0; font-size: 18px; font-weight: 700; }
 .meta-line code { font-family: ui-monospace, monospace; background: var(--panel-soft); padding: 1px 5px; border-radius: var(--radius); }
 
 .add-mod { display: grid; grid-template-columns: 1fr 1fr 130px; gap: 6px; margin-bottom: 10px; }
-.mod-list { display: flex; flex-direction: column; gap: 6px; }
-.mod-item {
-  display: grid;
-  grid-template-columns: 100px 1fr 70px 60px 1fr;
-  gap: 10px;
+
+/* ---- 树形结构 ---- */
+.tree { display: flex; flex-direction: column; gap: 4px; }
+.tree-cat { display: flex; flex-direction: column; }
+.row {
+  display: flex;
   align-items: center;
-  padding: 8px 12px;
-  background: var(--panel-soft);
-  border: 1px solid var(--border-subtle);
+  gap: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   cursor: pointer;
-  font-size: 12.5px;
   text-align: left;
-  transition: border-color var(--transition), background var(--transition);
+  font-size: 12.5px;
+  width: 100%;
+  transition: background var(--transition), border-color var(--transition);
 }
-.mod-item:hover { border-color: var(--accent); background: var(--accent-soft); }
-.g { color: var(--text-muted); font-size: 11px; }
-.n { font-weight: 600; color: var(--text); }
-.sub-count, .kpi-count { font-size: 11px; color: var(--text-dim); }
-.owner { font-size: 11px; color: var(--text-muted); text-align: right; }
+.cat-row {
+  background: var(--panel-soft);
+  border-color: var(--border-subtle);
+  font-weight: 600;
+  color: var(--text);
+}
+.cat-row:hover { border-color: var(--accent); }
+.caret {
+  display: inline-block;
+  width: 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.cat-name { flex: 1; }
+.badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--panel);
+  padding: 1px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+}
+
+.cat-body { display: flex; flex-direction: column; gap: 3px; padding: 4px 0 4px 18px; }
+.empty-cat { padding: 6px 10px; font-size: 11px; color: var(--text-dim); }
+
+.tree-mod { display: flex; flex-direction: column; }
+.mod-row {
+  padding: 6px 10px 6px 4px;
+  background: var(--panel-soft);
+  border-color: var(--border-subtle);
+}
+.mod-row:hover { background: var(--accent-soft); border-color: var(--accent); }
+.caret-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.caret-btn:hover:not(:disabled) { color: var(--accent); background: var(--panel); }
+.caret-btn:disabled { cursor: default; opacity: 0.5; }
+.mod-link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text);
+}
+.mod-name { font-weight: 600; }
+.mod-meta { font-size: 11px; color: var(--text-dim); }
+
+.sub-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 10px 6px 30px;
+}
+.sub-chip {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--panel);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 8px;
+  border-radius: var(--radius);
+}
 
 .hint { font-size: 12px; color: var(--text-dim); padding: 6px 0; }
 .err-banner { background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30); color: var(--status-red); padding: 6px 10px; border-radius: var(--radius); font-size: 12px; margin: 0; }
