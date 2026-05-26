@@ -71,21 +71,15 @@ const summary = computed(() => {
 function selectPdt() { pushView({ view: 'pdt', week: current.value.week }) }
 function selectLtc(id) { pushView({ view: 'ltc', id, week: current.value.week }) }
 
-/* 看板/风险 双 chip 开关:默认两个都开,点击反选,至少保留一个 */
-const showBoard = ref(true)
-const showRisk = ref(true)
-const viewMode = computed(() => {
-  if (showBoard.value && showRisk.value) return 'both'
-  if (showBoard.value) return 'board'
-  return 'risk'
-})
-function toggleBoard() {
-  if (showBoard.value && !showRisk.value) return // 至少保留一个
-  showBoard.value = !showBoard.value
-}
-function toggleRisk() {
-  if (showRisk.value && !showBoard.value) return
-  showRisk.value = !showRisk.value
+/* 状态色 chip 三合一:click 切换该色显隐(至少保留一个) */
+const visibleTones = ref({ green: true, yellow: true, red: true })
+function toggleTone(key) {
+  const cur = visibleTones.value
+  if (cur[key]) {
+    const onCount = Object.values(cur).filter(Boolean).length
+    if (onCount <= 1) return // 至少保留一个
+  }
+  visibleTones.value = { ...cur, [key]: !cur[key] }
 }
 
 const showAdminTool = ref('') // '' | 'ltc-base' | 'snapshots'
@@ -111,28 +105,25 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           <span class="date-range">{{ dateRange }}</span>
         </h1>
         <div class="hdr-right">
-          <div class="view-toggle" role="group" aria-label="看板/风险显示开关">
+          <span class="tone-summary" role="group" aria-label="正常/预警/阻塞 显隐切换">
             <button
-              class="toggle-chip"
-              :class="{ active: showBoard }"
-              v-tooltip="showBoard ? '隐藏看板段(至少保留一个)' : '显示看板段(全部模块的子项色块)'"
-              @click="toggleBoard"
-            >
-              <i class="dot board"></i>看板
-            </button>
+              class="chip green"
+              :class="{ off: !visibleTones.green }"
+              v-tooltip="visibleTones.green ? '隐藏正常项(至少保留一个色)' : '显示正常项(绿色+灰色)'"
+              @click="toggleTone('green')"
+            ><i class="dot"></i>正常 {{ summary.green }}</button>
             <button
-              class="toggle-chip"
-              :class="{ active: showRisk }"
-              v-tooltip="showRisk ? '隐藏风险段(至少保留一个)' : '显示风险段(仅非绿模块与子项)'"
-              @click="toggleRisk"
-            >
-              <i class="dot risk"></i>风险
-            </button>
-          </div>
-          <span class="tone-summary">
-            <span class="chip red" v-tooltip="'Delay/Block 项总数'"><i class="dot"></i>{{ summary.red }}</span>
-            <span class="chip yellow" v-tooltip="'预警项总数'"><i class="dot"></i>{{ summary.yellow }}</span>
-            <span class="chip green" v-tooltip="'正常项总数'"><i class="dot"></i>{{ summary.green }}</span>
+              class="chip yellow"
+              :class="{ off: !visibleTones.yellow }"
+              v-tooltip="visibleTones.yellow ? '隐藏预警项(至少保留一个色)' : '显示预警项(黄色)'"
+              @click="toggleTone('yellow')"
+            ><i class="dot"></i>预警 {{ summary.yellow }}</button>
+            <button
+              class="chip red"
+              :class="{ off: !visibleTones.red }"
+              v-tooltip="visibleTones.red ? '隐藏阻塞项(至少保留一个色)' : '显示阻塞项(红色)'"
+              @click="toggleTone('red')"
+            ><i class="dot"></i>阻塞 {{ summary.red }}</button>
           </span>
           <div v-if="canEnterLtcAdmin && !isReadonly" class="admin-tools">
             <button
@@ -165,7 +156,7 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           v-if="currentLtcId"
           :ltc-id="currentLtcId"
           :modules="modules"
-          :mode="viewMode"
+          :visible-tones="visibleTones"
           :status-key-of="ltcStatusKey"
           :can-edit-module-status="canEditStatusKey"
           :can-enter-admin="canManageStructure"
@@ -223,33 +214,15 @@ h1 {
 }
 .hdr-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-.view-toggle { display: inline-flex; gap: 4px; }
-.toggle-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 12px; font-weight: 600;
-  padding: 4px 10px; border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: color 120ms, background 120ms, border-color 120ms;
-}
-.toggle-chip:hover { color: var(--accent); border-color: var(--accent); }
-.toggle-chip.active {
-  background: var(--accent-soft, var(--panel-soft));
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.toggle-chip .dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
-.toggle-chip .dot.board { background: var(--status-green); }
-.toggle-chip .dot.risk { background: var(--status-red); }
-
 .tone-summary { display: inline-flex; gap: 4px; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 12px; font-weight: 600;
   padding: 3px 9px; border-radius: 6px;
   font-variant-numeric: tabular-nums;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 120ms, filter 120ms;
 }
 .chip.red { background: var(--status-red-bg); color: var(--status-red); }
 .chip.yellow { background: var(--status-yellow-bg); color: var(--status-yellow); }
@@ -258,6 +231,14 @@ h1 {
 .chip.red .dot { background: var(--status-red); }
 .chip.yellow .dot { background: var(--status-yellow); }
 .chip.green .dot { background: var(--status-green); }
+.chip:hover { filter: brightness(0.95); }
+.chip.off {
+  background: var(--panel-soft);
+  color: var(--text-dim, var(--text-muted));
+  border-color: var(--border);
+  opacity: 0.55;
+}
+.chip.off .dot { background: var(--text-dim, var(--text-muted)); opacity: 0.6; }
 
 .admin-tools { display: flex; gap: 6px; }
 .admin-tools .tool-btn {
