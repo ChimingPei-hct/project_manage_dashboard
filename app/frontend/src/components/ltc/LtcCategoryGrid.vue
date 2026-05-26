@@ -23,7 +23,8 @@ import UserSearchInput from '../UserSearchInput.vue'
 const props = defineProps({
   ltcId: { type: String, required: true },
   modules: { type: Array, default: () => [] },
-  mode: { type: String, default: 'both' }, // 'board' | 'risk' | 'both'
+  /* 状态色显隐:{ green, yellow, red } 三色独立 toggle,gray 跟随 green */
+  visibleTones: { type: Object, default: () => ({ green: true, yellow: true, red: true }) },
   canEditModuleStatus: { type: Function, default: () => false },
   statusKeyOf: { type: Function, required: true },
   canEnterAdmin: { type: Boolean, default: false },
@@ -88,6 +89,47 @@ async function assignCatOwner(openId) {
     ownerPicker.value.busy = false
   }
 }
+
+// ---- 新建大类(本 LTC 内,scope=ltc) ----
+// 仅在 editMode + canEnterAdmin 时显示按钮;手动建的 LTC 没大类导致单列,
+// 此入口让用户能后补大类把布局拉回三级结构(详见 design/04 §5.5)
+const newCat = ref(null) // { name, saving, err } | null
+const newCatOpen = computed(() => newCat.value !== null)
+useEscClose(newCatOpen, () => { newCat.value = null })
+function openNewCat() { newCat.value = { name: '', saving: false, err: '' } }
+function closeNewCat() { newCat.value = null }
+function genCatId(name) {
+  const sani = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  const ltcSlug = sani(props.ltcId) || 'ltc'
+  const slug = sani(name) || 'new'
+  return `cat-${ltcSlug}-${slug}-${Math.random().toString(36).slice(2, 6)}`
+}
+async function submitNewCat() {
+  if (!newCat.value) return
+  const n = newCat.value.name.trim()
+  if (!n) { newCat.value.err = '请输入大类名'; return }
+  newCat.value.saving = true; newCat.value.err = ''
+  try {
+    // 取本 LTC 已有大类的最大 order + 1
+    const existing = (categories.value || []).filter(c => c.scope === 'ltc' && c.ltc_id === props.ltcId)
+    const nextOrder = existing.length
+      ? Math.max(...existing.map(c => c.order ?? 0)) + 1
+      : 1
+    await adminApi.createCategory({
+      id: genCatId(n),
+      scope: 'ltc',
+      ltc_id: props.ltcId,
+      name: n,
+      order: nextOrder,
+    })
+    await reloadCategories()
+    closeNewCat()
+  } catch (e) {
+    newCat.value.err = e.payload?.detail || e.message || '创建失败'
+  } finally {
+    if (newCat.value) newCat.value.saving = false
+  }
+}
 function openNewMod(cat) {
   newMod.value = { categoryId: cat?.id || null, categoryName: cat?.name || '未分类', name: '', saving: false, err: '' }
 }
@@ -119,8 +161,6 @@ async function submitNewMod() {
   }
 }
 
-const showBoard = computed(() => props.mode === 'board' || props.mode === 'both')
-const showRisk = computed(() => props.mode === 'risk' || props.mode === 'both')
 const totalCats = computed(() => grouped.value.length)
 
 const gridStyle = computed(() => {
@@ -132,11 +172,28 @@ const gridStyle = computed(() => {
 <template>
   <div class="ltc-cat-wrap">
     <div v-if="!totalCats" class="empty-hint">
-      该 LTC 暂未配置大类(Category)。请按「设计 04 §5.5」从模板池初始化本 LTC。
+      <p>该 LTC 暂未配置大类(Category)。两种补救方式:</p>
+      <p>① 从模板池初始化(详见 design/04 §5.5)</p>
+      <p>② 手动新建大类(下方按钮,需先进入编辑模式)</p>
+      <button
+        v-if="canEnterAdmin && editMode"
+        type="button"
+        class="new-cat-btn"
+        v-tooltip="'在本 LTC 内新建第一个大类'"
+        @click="openNewCat"
+      >+ 新建大类</button>
     </div>
 
-    <!-- 看板/风险同卡:两段由 showBoard/showRisk 在卡内显隐 -->
+    <!-- 三级看板:每个 LtcModuleCard 内同时展示 chips + 风险行,按 visibleTones 过滤 -->
     <section v-if="totalCats" class="grid-section">
+      <div v-if="canEnterAdmin && editMode" class="new-cat-bar">
+        <button
+          type="button"
+          class="new-cat-btn"
+          v-tooltip="'在本 LTC 内新建大类(可放置自己的模块,把单列布局拉回多列三级结构)'"
+          @click="openNewCat"
+        >+ 新建大类</button>
+      </div>
       <div class="grid" :style="gridStyle">
         <div v-for="g in grouped" :key="`b-${g.category?.id || '__uncat'}`" class="col">
           <header class="col-head">
@@ -157,8 +214,7 @@ const gridStyle = computed(() => {
             :module="m"
             :entry="entryOf(m)"
             :can-edit="canEditModuleStatus(statusKeyOf(m))"
-            :show-board="showBoard"
-            :show-risk="showRisk"
+            :visible-tones="visibleTones"
             @edit-sub="(s) => openSubEdit(m, s)"
             @add-sub="openSubCreate(m)"
             @edit-module-status="openModStatus(m)"
@@ -245,6 +301,37 @@ const gridStyle = computed(() => {
         </footer>
       </div>
     </div>
+
+    <!-- 新建大类弹窗(本 LTC 内,scope=ltc) -->
+    <div v-if="newCat" class="mask">
+      <div class="box">
+        <header class="mh">
+          <h3>新建大类</h3>
+          <button class="close" v-tooltip="'关闭'" @click="closeNewCat">×</button>
+        </header>
+        <p v-if="newCat.err" class="err">{{ newCat.err }}</p>
+        <p class="hint">新建本 LTC 私有大类(不影响模板池与其他 LTC)。创建后即可在该大类下添加模块。</p>
+        <label class="block">
+          <span class="block-title">大类名称 *</span>
+          <input
+            v-model="newCat.name"
+            placeholder="如:感知 / 规控 / 工具与交付"
+            maxlength="32"
+            autofocus
+            @keyup.enter="submitNewCat"
+          />
+        </label>
+        <footer class="mf">
+          <button :disabled="newCat.saving" v-tooltip="'放弃'" @click="closeNewCat">取消</button>
+          <button
+            class="primary"
+            :disabled="!newCat.name.trim() || newCat.saving"
+            v-tooltip="'创建大类'"
+            @click="submitNewCat"
+          >{{ newCat.saving ? '创建中…' : '创建' }}</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -323,8 +410,10 @@ input {
   font-size: 12px; margin: 0 0 10px;
 }
 .foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
-.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.mf .primary,
+.foot .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.mf .primary:disabled,
+.foot .primary:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* 大类 Owner 指派按钮 + 弹窗 */
 .cat-owner-edit {
@@ -338,6 +427,21 @@ input {
   margin-left: 6px;
 }
 .cat-owner-edit:hover { background: var(--accent-soft); }
+
+/* 新建大类按钮 — 顶部条 + 空态 共用 */
+.new-cat-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.new-cat-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+}
+.new-cat-btn:hover { background: var(--accent-soft); }
+.empty-hint .new-cat-btn { margin-top: 12px; }
 .mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .mh h3 { margin: 0; font-size: 15px; font-weight: 700; }
 .mf { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border-subtle); }

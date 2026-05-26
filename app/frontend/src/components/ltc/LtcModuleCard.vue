@@ -5,22 +5,31 @@ import { risksOf, subRiskOf } from '../../composables/useStatusHelpers.js'
 
 /**
  * LTC 看板模块卡(三级结构第二层)。
- * 单卡承载两段(由 showBoard/showRisk 控制显隐,差异通过 props 表达):
- *   - 看板段:模块名色块 + 一排子项色块
- *   - 风险段:模块级风险 + 每个非绿(红/黄)子项一行
+ * 单卡同时展示:
+ *   - 模块名色块 + 一排子项色块(按 visibleTones 过滤)
+ *   - 非绿子项的风险说明(只显示 yellow/red 中可见的)
+ * visibleTones = { green, yellow, red };gray 跟随 green。
+ * 卡片自身在所有内容都被过滤时自动 v-if 隐藏。
  * 与 PDT 看板的 ModuleCardGrid 独立(详见 CLAUDE.md 红线)。
  */
 const props = defineProps({
   module: { type: Object, required: true },
   entry: { type: Object, default: () => ({}) },
   canEdit: { type: Boolean, default: false },
-  showBoard: { type: Boolean, default: true },
-  showRisk: { type: Boolean, default: true },
+  visibleTones: { type: Object, default: () => ({ green: true, yellow: true, red: true }) },
 })
 const emit = defineEmits(['edit-sub', 'add-sub', 'edit-module-status', 'edit-module-structure'])
 
 const { contacts, ensureContacts } = useContactCache()
 onMounted(() => { ensureContacts() })
+
+function toneKey(color) {
+  if (color === 'gray') return 'green' // gray 视作"正常"分组
+  return color
+}
+function toneVisible(color) {
+  return !!props.visibleTones[toneKey(color)]
+}
 
 const moduleColor = computed(() => props.entry?.module_color || 'gray')
 const subColors = computed(() => props.entry?.sub_items_color || {})
@@ -32,13 +41,28 @@ const ownerName = computed(() => {
   return u?.name || displayName(oid) || ''
 })
 
-// 风险段数据:模块级风险行 + 非绿子项风险行
+const visibleSubs = computed(() => subs.value.filter(s => toneVisible(subColors.value[s.id] || 'gray')))
+const moduleTitleVisible = computed(() => toneVisible(moduleColor.value))
+
+/* 卡片可见性:模块色或任一子项色在可见集合内,或处于编辑模式(允许加子项) */
+const cardVisible = computed(() => {
+  if (moduleTitleVisible.value) return true
+  if (visibleSubs.value.length > 0) return true
+  if (props.canEdit) return true // 编辑态保留卡片用于 + 子项 / ⚙
+  return false
+})
+
+/* 风险段:模块级 + 子项级,均按可见色过滤 */
 const moduleRisks = computed(() => {
   if (moduleColor.value === 'green' || moduleColor.value === 'gray') return []
+  if (!toneVisible(moduleColor.value)) return []
   return risksOf(props.entry)
 })
 const riskySubs = computed(() => subs.value
-  .filter(s => { const c = subColors.value[s.id]; return c === 'red' || c === 'yellow' })
+  .filter(s => {
+    const c = subColors.value[s.id]
+    return (c === 'red' || c === 'yellow') && toneVisible(c)
+  })
   .map(s => ({ sub: s, color: subColors.value[s.id], text: subRiskOf(props.entry, s.id) }))
 )
 const hasRiskContent = computed(() => moduleRisks.value.length > 0 || riskySubs.value.length > 0)
@@ -51,10 +75,10 @@ function tipOf(sub) {
 </script>
 
 <template>
-  <div class="ltc-mod-card">
+  <div v-if="cardVisible" class="ltc-mod-card">
     <header
       class="title"
-      :class="[`tone-${moduleColor}`, { clickable: canEdit }]"
+      :class="[`tone-${moduleColor}`, { clickable: canEdit, dimmed: !moduleTitleVisible }]"
       v-tooltip="canEdit ? '点击编辑本模块的整体状态色与风险说明' : ''"
       @click="canEdit && emit('edit-module-status')"
     >
@@ -72,10 +96,10 @@ function tipOf(sub) {
         @click.stop="emit('edit-module-structure')"
       >⚙</button>
     </header>
-    <!-- 看板段 -->
-    <div v-if="showBoard" class="chips">
+    <!-- chips:按 tone 过滤 -->
+    <div class="chips">
       <button
-        v-for="s in subs"
+        v-for="s in visibleSubs"
         :key="s.id"
         type="button"
         class="chip"
@@ -91,40 +115,42 @@ function tipOf(sub) {
         v-tooltip="'为本模块新增一个子项色块'"
         @click="emit('add-sub')"
       >+ 子项</button>
-      <span v-if="!subs.length && !canEdit" class="empty">无子项</span>
+      <span v-if="!visibleSubs.length && !canEdit" class="empty">
+        {{ subs.length ? '当前过滤下无子项' : '无子项' }}
+      </span>
     </div>
 
-    <!-- 分隔线:仅两段同显且风险段有内容时 -->
-    <div v-if="showBoard && showRisk && hasRiskContent" class="seg-divider"></div>
-
-    <!-- 风险段 -->
-    <div v-if="showRisk && hasRiskContent" class="risk-body">
-      <div v-if="moduleRisks.length" class="mod-risks">
-        <div
-          v-for="(r, i) in moduleRisks"
-          :key="`m-${i}`"
-          class="risk-line"
-          :class="`tone-${r.severity}`"
-          v-tooltip="'模块级风险说明'"
-        >
-          <span class="dot"></span>
-          <span class="txt">{{ r.text }}</span>
+    <!-- 风险段:仅当有可见的 yellow/red 内容时出现 -->
+    <template v-if="hasRiskContent">
+      <div class="seg-divider"></div>
+      <div class="risk-body">
+        <div v-if="moduleRisks.length" class="mod-risks">
+          <div
+            v-for="(r, i) in moduleRisks"
+            :key="`m-${i}`"
+            class="risk-line"
+            :class="`tone-${r.severity}`"
+            v-tooltip="'模块级风险说明'"
+          >
+            <span class="dot"></span>
+            <span class="txt">{{ r.text }}</span>
+          </div>
+        </div>
+        <div v-if="riskySubs.length" class="sub-risks">
+          <div v-for="item in riskySubs" :key="item.sub.id" class="sub-line">
+            <button
+              type="button"
+              class="chip"
+              :class="`tone-${item.color}`"
+              :disabled="!canEdit"
+              v-tooltip="tipOf(item.sub)"
+              @click="emit('edit-sub', item.sub)"
+            >{{ item.sub.name }}</button>
+            <span class="sub-text">{{ item.text || '(未填写风险说明)' }}</span>
+          </div>
         </div>
       </div>
-      <div v-if="riskySubs.length" class="sub-risks">
-        <div v-for="item in riskySubs" :key="item.sub.id" class="sub-line">
-          <button
-            type="button"
-            class="chip"
-            :class="`tone-${item.color}`"
-            :disabled="!canEdit"
-            v-tooltip="tipOf(item.sub)"
-            @click="emit('edit-sub', item.sub)"
-          >{{ item.sub.name }}</button>
-          <span class="sub-text">{{ item.text || '(未填写风险说明)' }}</span>
-        </div>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -167,6 +193,7 @@ function tipOf(sub) {
 .title.tone-gray { background: var(--panel-soft); color: var(--text-muted); }
 .title.clickable { cursor: pointer; }
 .title.clickable:hover { filter: brightness(0.96); }
+.title.dimmed { opacity: 0.45; }
 .cog {
   flex: 0 0 auto;
   border: none; background: transparent;
