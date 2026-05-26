@@ -4,14 +4,17 @@
  * Tab 1 "PDT 信息":名称 + 图标编辑(原 PdtNameDialog 能力,内容原样搬过来)
  * Tab 2 "LTC 模板":单一模板池的 category/module CRUD
  */
-import { ref, watch, computed } from 'vue'
+import { ref, toRef, watch, computed } from 'vue'
 import { useDashboard } from '../composables/useDashboard.js'
 import { adminApi } from '../composables/useAdminApi.js'
+import { useEscClose } from '../composables/useEscClose.js'
 import { iconUrlOf } from '../utils/favicon.js'
 import LtcTemplateEditor from './admin/LtcTemplateEditor.vue'
 
 const props = defineProps({ open: { type: Boolean, default: false } })
 const emit = defineEmits(['close'])
+
+useEscClose(toRef(props, 'open'), () => emit('close'))
 
 const { pdt, refresh } = useDashboard()
 const tab = ref('pdt')
@@ -110,7 +113,8 @@ async function saveName() {
 </script>
 
 <template>
-  <div v-if="open" class="drawer-mask" @click.self="emit('close')">
+  <!-- 抽屉里是编辑表单,点遮罩不应该误关丢失修改:仅 × / Esc 关闭(详见 design/12 §7.6) -->
+  <div v-if="open" class="drawer-mask">
     <aside class="drawer" role="dialog" :style="{ width: drawerWidth + 'px' }" :class="{ dragging }">
       <div
         class="resize-handle"

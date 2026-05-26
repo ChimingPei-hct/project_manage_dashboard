@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { api } from '../api/client.js'
 import { useDashboard } from '../composables/useDashboard.js'
 import { kpiItemsOf, risksOf, subRiskOf } from '../composables/useStatusHelpers.js'
 import { adminApi, newId } from '../composables/useAdminApi.js'
 import { useContactCache, displayName } from '../composables/useContactCache.js'
+import { useEscClose } from '../composables/useEscClose.js'
 import UserSearchInput from './UserSearchInput.vue'
 import ConfirmDialog from './harness/ConfirmDialog.vue'
 
@@ -25,6 +26,8 @@ const props = defineProps({
   createDefaults: { type: Object, default: () => ({ scope: 'pdt', ltc_id: null, group: '总览' }) },
 })
 const emit = defineEmits(['close', 'saved', 'created', 'deleted', 'updated'])
+
+useEscClose(toRef(props, 'open'), () => emit('close'))
 
 const COLORS = ['green', 'yellow', 'red']
 const COLOR_LABEL = { green: '绿/正常', yellow: '黄/预警', red: '红/Block', gray: '灰/未报' }

@@ -1,10 +1,15 @@
 <script setup>
-defineProps({
+import { toRef } from 'vue'
+import { useEscClose } from '../../composables/useEscClose.js'
+
+const props = defineProps({
   open: { type: Boolean, default: false },
   title: { type: String, default: '' },
   width: { type: String, default: '720px' },
 })
 const emit = defineEmits(['close'])
+
+useEscClose(toRef(props, 'open'), () => emit('close'))
 
 function onBackdrop(e) {
   if (e.target === e.currentTarget) emit('close')

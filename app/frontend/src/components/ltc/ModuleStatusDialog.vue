@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { api } from '../../api/client.js'
 import { useDashboard } from '../../composables/useDashboard.js'
+import { useEscClose } from '../../composables/useEscClose.js'
 
 /**
  * 模块级状态编辑弹窗:改 module_color + risk_note(整模块的"概览状态")。
@@ -14,6 +15,8 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'saved'])
+
+useEscClose(toRef(props, 'open'), () => emit('close'))
 
 const { status, refresh } = useDashboard()
 const color = ref('green')

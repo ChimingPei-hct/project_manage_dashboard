@@ -1,5 +1,6 @@
 <script setup>
-import { computed } from 'vue'
+import { toRef } from 'vue'
+import { useEscClose } from '../../composables/useEscClose.js'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -10,6 +11,8 @@ const props = defineProps({
   danger: { type: Boolean, default: true },
 })
 const emit = defineEmits(['confirm', 'cancel'])
+
+useEscClose(toRef(props, 'open'), () => emit('cancel'))
 
 function onBackdrop(e) {
   if (e.target === e.currentTarget) emit('cancel')
