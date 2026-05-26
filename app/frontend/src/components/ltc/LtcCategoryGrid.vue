@@ -4,9 +4,11 @@ import { useCategories } from '../../composables/useCategories.js'
 import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
+import { useEscClose } from '../../composables/useEscClose.js'
 import LtcModuleCard from './LtcModuleCard.vue'
 import SubItemEditDialog from './SubItemEditDialog.vue'
 import ModuleStatusDialog from './ModuleStatusDialog.vue'
+import UserSearchInput from '../UserSearchInput.vue'
 
 /**
  * LTC 三级看板:Category(列) → Module(模块卡) → Sub-item(色块)。
@@ -25,6 +27,7 @@ const props = defineProps({
   canEditModuleStatus: { type: Function, default: () => false },
   statusKeyOf: { type: Function, required: true },
   canEnterAdmin: { type: Boolean, default: false },
+  editMode: { type: Boolean, default: false },
 })
 const emit = defineEmits(['pick-module'])
 
@@ -63,6 +66,28 @@ const editingModCan = computed(() => editingMod.value ? props.canEditModuleStatu
 
 // ---- new module create (inline) ----
 const newMod = ref(null) // { categoryId, categoryName, name, saving, err }
+const newModOpen = computed(() => newMod.value !== null)
+useEscClose(newModOpen, () => { newMod.value = null })
+
+// ---- 大类 Owner 指派 (仅在 editMode + canEnterAdmin 时显示按钮) ----
+const ownerPicker = ref(null) // { catId, busy, err } | null
+const ownerPickerOpen = computed(() => ownerPicker.value !== null)
+useEscClose(ownerPickerOpen, () => { ownerPicker.value = null })
+function openOwnerPicker(catId) { ownerPicker.value = { catId, busy: false, err: '' } }
+function closeOwnerPicker() { ownerPicker.value = null }
+async function assignCatOwner(openId) {
+  if (!ownerPicker.value) return
+  ownerPicker.value.busy = true
+  ownerPicker.value.err = ''
+  try {
+    await adminApi.updateCategory(ownerPicker.value.catId, { owner_open_id: openId || null })
+    await reloadCategories()
+    ownerPicker.value = null
+  } catch (e) {
+    ownerPicker.value.err = e.payload?.detail || e.message || '保存失败'
+    ownerPicker.value.busy = false
+  }
+}
 function openNewMod(cat) {
   newMod.value = { categoryId: cat?.id || null, categoryName: cat?.name || '未分类', name: '', saving: false, err: '' }
 }
@@ -117,6 +142,13 @@ const gridStyle = computed(() => {
           <header class="col-head">
             <span class="cat-name">{{ g.category?.name || '未分类' }}</span>
             <span v-if="g.category" class="cat-owner">Owner · {{ ownerLabel(g.category.owner_open_id) }}</span>
+            <button
+              v-if="g.category && canEnterAdmin && editMode"
+              type="button"
+              class="cat-owner-edit"
+              v-tooltip="g.category.owner_open_id ? '更换大类 Owner' : '指派大类 Owner'"
+              @click="openOwnerPicker(g.category.id)"
+            >{{ g.category.owner_open_id ? '换' : '+ 指派' }}</button>
           </header>
           <div v-if="!g.modules.length && !canEnterAdmin" class="col-empty">该大类暂无模块</div>
           <LtcModuleCard
@@ -189,6 +221,27 @@ const gridStyle = computed(() => {
             v-tooltip="'创建模块(默认无子项、无 KPI、无 Owner,后续可改)'"
             @click="submitNewMod"
           >{{ newMod.saving ? '创建中…' : '创建' }}</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- 大类 Owner 指派弹窗(仅 editMode + canEnterAdmin 才能触发) -->
+    <div v-if="ownerPicker" class="mask">
+      <div class="box">
+        <header class="mh">
+          <h3>指派大类 Owner</h3>
+          <button class="close" v-tooltip="'关闭'" @click="closeOwnerPicker">×</button>
+        </header>
+        <p v-if="ownerPicker.err" class="err">{{ ownerPicker.err }}</p>
+        <p class="hint">搜索通讯录人员并指派为本大类负责人。指派后该大类标题旁会显示 Owner 姓名。</p>
+        <UserSearchInput
+          :modelValue="null"
+          placeholder="搜姓名/邮箱/手机号"
+          @select="u => assignCatOwner(u.open_id)"
+        />
+        <footer class="mf">
+          <button :disabled="ownerPicker.busy" v-tooltip="'清除当前 Owner(置为未指派)'" @click="assignCatOwner(null)">清除 Owner</button>
+          <button :disabled="ownerPicker.busy" v-tooltip="'放弃'" @click="closeOwnerPicker">取消</button>
         </footer>
       </div>
     </div>
@@ -272,4 +325,25 @@ input {
 .foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* 大类 Owner 指派按钮 + 弹窗 */
+.cat-owner-edit {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 6px;
+}
+.cat-owner-edit:hover { background: var(--accent-soft); }
+.mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.mh h3 { margin: 0; font-size: 15px; font-weight: 700; }
+.mf { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border-subtle); }
+.mf button {
+  font-size: 12px; padding: 5px 12px; border: 1px solid var(--border);
+  background: var(--panel); border-radius: var(--radius); cursor: pointer;
+}
+.err { background: var(--status-red-bg); color: var(--status-red); padding: 6px 10px; border-radius: var(--radius); font-size: 12px; margin: 0 0 8px; }
 </style>
