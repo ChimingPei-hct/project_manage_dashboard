@@ -169,6 +169,7 @@ function closeModuleDrawer() { editingModuleId.value = '' }
           :status-key-of="ltcStatusKey"
           :can-edit-module-status="canEditStatusKey"
           :can-enter-admin="canManageStructure"
+          :edit-mode="editMode"
           @pick-module="pickModule"
         />
       </section>
