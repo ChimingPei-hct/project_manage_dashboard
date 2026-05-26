@@ -9,6 +9,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useCategories } from '../../composables/useCategories.js'
 import { adminApi } from '../../composables/useAdminApi.js'
 import { sseBus } from '../../composables/sseBus.js'
+import { useEscClose } from '../../composables/useEscClose.js'
 
 const { categories, reload: reloadCats } = useCategories()
 const templateModules = ref([])
@@ -56,7 +57,15 @@ function genModId(name) {
 
 /* --- Category 操作 --- */
 const showCreateCat = ref(false)
+useEscClose(showCreateCat, () => { showCreateCat.value = false })
 const catDraft = ref({ name: '' })
+
+/* --- 折叠状态(树形结构,默认全展开) --- */
+const collapsedCats = ref({})
+function isCatCollapsed(id) { return !!collapsedCats.value[id] }
+function toggleCat(id) {
+  collapsedCats.value = { ...collapsedCats.value, [id]: !collapsedCats.value[id] }
+}
 function openCreateCat() { catDraft.value = { name: '' }; showCreateCat.value = true }
 async function saveCreateCat() {
   const name = (catDraft.value.name || '').trim()
@@ -122,6 +131,7 @@ async function moveCat(c, delta) {
 
 /* --- Module 操作 --- */
 const showCreateMod = ref(false)
+useEscClose(showCreateMod, () => { showCreateMod.value = false })
 const modDraft = ref({ name: '', group: '', category_id: null })
 function openCreateMod(catId) {
   modDraft.value = { name: '', group: '', category_id: catId }
@@ -202,62 +212,78 @@ async function moveMod(m, delta) {
       <p>模板池为空。新建大类后,新建 LTC 时即可勾选"从模板复制"快速初始化。</p>
     </div>
 
-    <div v-for="(c, ci) in templateCats" :key="c.id" class="cat-card">
-      <div class="cat-head">
-        <div class="cat-name">
-          <template v-if="!editingCat[c.id]">
-            <span class="name">{{ c.name }}</span>
-            <span class="cnt">{{ modulesOf(c.id).length }} 个模块</span>
-          </template>
-          <template v-else>
-            <input v-model="editingCat[c.id].name" class="name-edit" maxlength="32" />
-          </template>
+    <div v-else class="tree">
+      <div v-for="(c, ci) in templateCats" :key="c.id" class="tree-cat">
+        <!-- 大类行(L1) -->
+        <div class="row cat-row">
+          <button
+            type="button"
+            class="caret-btn"
+            v-tooltip="'折叠/展开本大类'"
+            @click="toggleCat(c.id)"
+          >{{ isCatCollapsed(c.id) ? '▶' : '▼' }}</button>
+          <div class="cat-name">
+            <template v-if="!editingCat[c.id]">
+              <span class="name">{{ c.name }}</span>
+              <span class="badge">{{ modulesOf(c.id).length }} 模块</span>
+            </template>
+            <template v-else>
+              <input v-model="editingCat[c.id].name" class="inline-edit" maxlength="32" @keyup.enter="saveEditCat(c)" />
+            </template>
+          </div>
+          <div class="acts">
+            <button class="mini" :disabled="ci === 0" v-tooltip="'上移大类'" @click="moveCat(c, -1)">↑</button>
+            <button class="mini" :disabled="ci === templateCats.length - 1" v-tooltip="'下移大类'" @click="moveCat(c, 1)">↓</button>
+            <template v-if="!editingCat[c.id]">
+              <button class="mini" v-tooltip="'新增本大类下的模板模块'" @click="openCreateMod(c.id)">+ 模块</button>
+              <button class="mini" v-tooltip="'重命名大类'" @click="startEditCat(c)">编辑</button>
+              <button class="mini danger" v-tooltip="'删除大类(本大类下若有模板模块需先清空)'" @click="removeCat(c)">删除</button>
+            </template>
+            <template v-else>
+              <button class="mini primary" v-tooltip="'保存修改'" @click="saveEditCat(c)">保存</button>
+              <button class="mini" v-tooltip="'放弃修改'" @click="cancelEditCat(c.id)">取消</button>
+            </template>
+          </div>
         </div>
-        <div class="cat-acts">
-          <button class="mini" :disabled="ci === 0" v-tooltip="'上移大类'" @click="moveCat(c, -1)">↑</button>
-          <button class="mini" :disabled="ci === templateCats.length - 1" v-tooltip="'下移大类'" @click="moveCat(c, 1)">↓</button>
-          <template v-if="!editingCat[c.id]">
-            <button class="mini" v-tooltip="'新增本大类下的模板模块'" @click="openCreateMod(c.id)">+ 模块</button>
-            <button class="mini" v-tooltip="'重命名大类'" @click="startEditCat(c)">编辑</button>
-            <button class="mini danger" v-tooltip="'删除大类(本大类下若有模板模块需先清空)'" @click="removeCat(c)">删除</button>
-          </template>
-          <template v-else>
-            <button class="mini primary" v-tooltip="'保存修改'" @click="saveEditCat(c)">保存</button>
-            <button class="mini" v-tooltip="'放弃修改'" @click="cancelEditCat(c.id)">取消</button>
-          </template>
+
+        <!-- 大类下的模块清单(L2) -->
+        <div v-show="!isCatCollapsed(c.id)" class="cat-body">
+          <div v-if="!modulesOf(c.id).length" class="empty-cat">本大类下暂无模板模块</div>
+          <div
+            v-for="(m, mi) in modulesOf(c.id)"
+            :key="m.id"
+            class="row mod-row"
+          >
+            <span class="caret-spacer">·</span>
+            <div class="mod-main">
+              <template v-if="!editingMod[m.id]">
+                <span class="m-name">{{ m.name }}</span>
+                <span class="m-group">分组 · {{ m.group || '未分组' }}</span>
+              </template>
+              <template v-else>
+                <input v-model="editingMod[m.id].name" class="inline-edit" placeholder="模块名" maxlength="48" />
+                <input v-model="editingMod[m.id].group" class="inline-edit" placeholder="分组(可选,留空沿用)" maxlength="32" />
+              </template>
+            </div>
+            <div class="acts">
+              <button class="mini" :disabled="mi === 0" v-tooltip="'上移模块'" @click="moveMod(m, -1)">↑</button>
+              <button class="mini" :disabled="mi === modulesOf(c.id).length - 1" v-tooltip="'下移模块'" @click="moveMod(m, 1)">↓</button>
+              <template v-if="!editingMod[m.id]">
+                <button class="mini" v-tooltip="'重命名 / 改分组'" @click="startEditMod(m)">编辑</button>
+                <button class="mini danger" v-tooltip="'删除模板模块'" @click="removeMod(m)">删除</button>
+              </template>
+              <template v-else>
+                <button class="mini primary" v-tooltip="'保存修改'" @click="saveEditMod(m)">保存</button>
+                <button class="mini" v-tooltip="'放弃修改'" @click="cancelEditMod(m.id)">取消</button>
+              </template>
+            </div>
+          </div>
         </div>
       </div>
-      <ul class="mod-list">
-        <li v-if="!modulesOf(c.id).length" class="mod-empty">本大类下暂无模板模块</li>
-        <li v-for="(m, mi) in modulesOf(c.id)" :key="m.id" class="mod-row">
-          <div class="mod-main">
-            <template v-if="!editingMod[m.id]">
-              <span class="m-name">{{ m.name }}</span>
-              <span class="m-group">分组 · {{ m.group || '未分组' }}</span>
-            </template>
-            <template v-else>
-              <input v-model="editingMod[m.id].name" class="m-edit" placeholder="模块名" maxlength="48" />
-              <input v-model="editingMod[m.id].group" class="m-edit" placeholder="分组(可选,留空沿用)" maxlength="32" />
-            </template>
-          </div>
-          <div class="mod-acts">
-            <button class="mini" :disabled="mi === 0" v-tooltip="'上移模块'" @click="moveMod(m, -1)">↑</button>
-            <button class="mini" :disabled="mi === modulesOf(c.id).length - 1" v-tooltip="'下移模块'" @click="moveMod(m, 1)">↓</button>
-            <template v-if="!editingMod[m.id]">
-              <button class="mini" v-tooltip="'重命名 / 改分组'" @click="startEditMod(m)">编辑</button>
-              <button class="mini danger" v-tooltip="'删除模板模块'" @click="removeMod(m)">删除</button>
-            </template>
-            <template v-else>
-              <button class="mini primary" v-tooltip="'保存修改'" @click="saveEditMod(m)">保存</button>
-              <button class="mini" v-tooltip="'放弃修改'" @click="cancelEditMod(m.id)">取消</button>
-            </template>
-          </div>
-        </li>
-      </ul>
     </div>
 
     <!-- 新建大类弹窗 -->
-    <div v-if="showCreateCat" class="modal-mask" @click.self="showCreateCat = false">
+    <div v-if="showCreateCat" class="modal-mask">
       <div class="modal-box">
         <header class="mh"><h3>新建模板大类</h3><button class="close" v-tooltip="'关闭'" @click="showCreateCat = false">×</button></header>
         <label class="fld">
@@ -272,7 +298,7 @@ async function moveMod(m, delta) {
     </div>
 
     <!-- 新建模块弹窗 -->
-    <div v-if="showCreateMod" class="modal-mask" @click.self="showCreateMod = false">
+    <div v-if="showCreateMod" class="modal-mask">
       <div class="modal-box">
         <header class="mh"><h3>新建模板模块</h3><button class="close" v-tooltip="'关闭'" @click="showCreateMod = false">×</button></header>
         <label class="fld">
@@ -306,32 +332,86 @@ async function moveMod(m, delta) {
 
 .empty { padding: 24px; background: var(--panel-soft); border: 1px dashed var(--border); border-radius: 6px; font-size: 13px; color: var(--text-muted); text-align: center; }
 
-.cat-card {
-  border: 1px solid var(--border-subtle); border-radius: 6px; background: var(--panel);
-  display: flex; flex-direction: column;
+/* ---- 树形结构 ---- */
+.tree { display: flex; flex-direction: column; gap: 4px; }
+.tree-cat { display: flex; flex-direction: column; }
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 12.5px;
+  transition: border-color var(--transition), background var(--transition);
 }
-.cat-head {
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 8px 10px; border-bottom: 1px solid var(--border-subtle);
-  background: var(--panel-soft); border-radius: 6px 6px 0 0;
+.cat-row {
+  background: var(--panel-soft);
+  font-weight: 600;
+  color: var(--text);
 }
-.cat-name { display: flex; align-items: center; gap: 10px; }
-.name { font-size: 13px; font-weight: 700; }
-.cnt { font-size: 11.5px; color: var(--text-muted); }
-.name-edit { font-size: 13px; padding: 3px 6px; width: 180px; border: 1px solid var(--border); border-radius: 6px; }
-.cat-acts { display: flex; gap: 4px; flex-wrap: wrap; }
+.cat-row:hover { border-color: var(--accent); }
+.caret-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 11px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+.caret-btn:hover { color: var(--accent); background: var(--panel); }
+.caret-spacer {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.cat-name { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.name { font-weight: 700; }
+.badge {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--panel);
+  padding: 1px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  font-weight: 500;
+}
+.inline-edit {
+  font-size: 12.5px;
+  padding: 3px 6px;
+  width: 180px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
 
-.mod-list { list-style: none; padding: 6px 8px; margin: 0; display: flex; flex-direction: column; gap: 4px; }
-.mod-empty { font-size: 12px; color: var(--text-muted); padding: 4px 4px; }
+.cat-body { display: flex; flex-direction: column; gap: 3px; padding: 4px 0 4px 18px; }
+.empty-cat { padding: 6px 10px; font-size: 11px; color: var(--text-dim); }
+
 .mod-row {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding: 6px 8px; border: 1px solid var(--border-subtle); border-radius: 6px;
+  padding: 6px 10px 6px 4px;
+  background: var(--panel-soft);
 }
-.mod-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
-.m-name { font-size: 12.5px; font-weight: 600; }
+.mod-row:hover { background: var(--accent-soft); border-color: var(--accent); }
+.mod-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.m-name { font-weight: 600; }
 .m-group { font-size: 11.5px; color: var(--text-muted); }
-.m-edit { font-size: 12.5px; padding: 3px 6px; width: 160px; border: 1px solid var(--border); border-radius: 6px; }
-.mod-acts { display: flex; gap: 4px; }
+
+.acts { display: flex; gap: 4px; flex-shrink: 0; }
 
 .mini {
   font-size: 11px; padding: 3px 7px; border-radius: 6px;
