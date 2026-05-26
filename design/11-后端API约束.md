@@ -55,7 +55,8 @@ app/backend/
 
 复用 oversea_projects 模式(参见 `oversea_projects/app/backend/main.py:550-592`):
 
-- 跨进程互斥:`fcntl.flock(LOCK_FD, fcntl.LOCK_EX)`,每类文件一把锁(`_pdt_lock`、`_modules_lock`、`_status_lock`、`_updates_lock`、`_snapshots_lock`)
+- 跨进程互斥:POSIX 用 `fcntl.flock(LOCK_FD, fcntl.LOCK_EX)`,Windows 用 `msvcrt.locking(fd, LK_LOCK, 1)`,通过 `sys.platform` 分流。统一封装为 `_flock_acquire/_flock_release`,业务侧只用 `with _FileLock("pdt", ...)`。每类文件一把锁(`_pdt_lock`、`_modules_lock`、`_status_lock`、`_updates_lock`、`_snapshots_lock` 等)
+- 锁目录:`tempfile.gettempdir() / f"pmd-locks-{uid_or_login}"`,POSIX 用 `os.getuid()`,Windows 用 `os.getlogin()`,避免硬编码 `/tmp`
 - 原子覆写:写到 `<file>.tmp` → `os.fsync` → `os.replace(<file>.tmp, <file>)`
 - JSONL 追加:`open(..., "a")` + flock
 
