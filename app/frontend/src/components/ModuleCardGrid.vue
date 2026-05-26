@@ -184,40 +184,48 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
   padding: 0 24px;
 }
 
+/* ── 卡片:顶部 4px 状态色条 + 状态色微 tint 背景 + 强化 elevation ── */
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-  padding: 16px 18px 12px;
+  box-shadow: var(--shadow-md);
+  padding: 22px 20px 14px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+  gap: 14px;
+  transition:
+    box-shadow var(--transition),
+    transform var(--transition),
+    border-color var(--transition),
+    background var(--transition);
   position: relative;
   overflow: hidden;
   font-feature-settings: 'tnum' on;
 }
+/* 顶部状态色横条 —— 最显眼的状态指示 */
 .card::before {
   content: '';
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
+  left: 0; right: 0; top: 0;
+  height: 4px;
   background: var(--status-gray);
-  border-radius: var(--radius) 0 0 var(--radius);
 }
+.card.tone-green  { background: linear-gradient(180deg, var(--status-green-bg) 0%, var(--panel) 96px); }
+.card.tone-yellow { background: linear-gradient(180deg, var(--status-yellow-bg) 0%, var(--panel) 96px); }
+.card.tone-red    { background: linear-gradient(180deg, var(--status-red-bg) 0%, var(--panel) 96px); }
 .card.tone-green::before  { background: var(--status-green); }
 .card.tone-yellow::before { background: var(--status-yellow); }
 .card.tone-red::before    { background: var(--status-red); }
 .card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-  border-color: var(--accent-soft);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
 }
 
 .card-badge {
@@ -238,9 +246,9 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 .card-head {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--text);
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .card-head-top {
   display: flex;
@@ -265,9 +273,10 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 .card-name {
   font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
   font-weight: 600;
-  font-size: 17px;
-  letter-spacing: 1px;
-  color: var(--text);
+  font-size: 19px;
+  letter-spacing: 1.5px;
+  color: var(--text-strong);
+  line-height: 1.3;
 }
 
 .kpis-block, .risks-block { display: flex; flex-direction: column; gap: 6px; }
