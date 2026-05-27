@@ -191,19 +191,26 @@ watch(() => props.milestones, render, { deep: true })
 .vis-time-axis .vis-grid.vis-minor { border-color: var(--border-subtle) !important; }
 .vis-time-axis .vis-grid.vis-major { border-color: var(--border) !important; }
 .vis-time-axis .vis-text {
-  color: var(--text-dim) !important;
+  color: var(--text-muted) !important;
+  font-size: 12.5px;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
 }
 .vis-time-axis .vis-text.vis-major {
-  font-weight: 700;
-  color: var(--text) !important;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-strong) !important;
 }
 
 /* 左侧 group 标签栏 */
 .vis-labelset .vis-label {
-  color: var(--text-dim);
-  font-size: 12px;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
   font-weight: 600;
+  letter-spacing: 0.05em;
   border-color: var(--border-subtle) !important;
 }
 
@@ -216,27 +223,31 @@ watch(() => props.milestones, render, { deep: true })
 .vis-item.ms-item .vis-item-content {
   padding: 0;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 .vis-item.ms-item .ms-shape {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 .vis-item.ms-item .ms-label {
-  font-size: 11px;
+  font-family: var(--font-sans);
+  font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.03em;
   white-space: nowrap;
-  max-width: 180px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .vis-item.ms-item .ms-date {
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
-  margin-top: 1px;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
 }
 /* 形状颜色按类型 */
 .vis-item.ms-TR .ms-shape { color: var(--accent); }
