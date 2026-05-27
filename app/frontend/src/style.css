@@ -20,9 +20,18 @@
   --status-green-bg: rgba(22, 163, 74, 0.10);
   --status-yellow-bg: rgba(217, 119, 6, 0.10);
   --status-red-bg: rgba(220, 38, 38, 0.10);
+  --status-green-bg-strong: rgba(22, 163, 74, 0.18);
+  --status-yellow-bg-strong: rgba(217, 119, 6, 0.18);
+  --status-red-bg-strong: rgba(220, 38, 38, 0.18);
   --status-green-border: rgba(22, 163, 74, 0.28);
   --status-yellow-border: rgba(217, 119, 6, 0.28);
   --status-red-border: rgba(220, 38, 38, 0.28);
+  --status-green-border-strong: rgba(22, 163, 74, 0.55);
+  --status-yellow-border-strong: rgba(217, 119, 6, 0.55);
+  --status-red-border-strong: rgba(220, 38, 38, 0.55);
+  --status-green-text-strong: #15803d;
+  --status-yellow-text-strong: #b45309;
+  --status-red-text-strong: #b91c1c;
 
   /* ── 表面与中性色:暖石灰系(stone family),warmth 让长时间停留更舒适 ── */
   --bg: #fafaf9;
@@ -68,6 +77,9 @@
   --font-sans: -apple-system, BlinkMacSystemFont, 'Inter', 'PingFang SC', 'Hiragino Sans GB',
                "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  /* 中文衬线:用于大标题与模块名,营造编辑感 */
+  --font-serif: 'Source Han Serif SC', 'Noto Serif SC', 'Noto Serif CJK SC',
+                'Songti SC', 'STSong', 'SimSun', Georgia, 'Times New Roman', serif;
 
   /* ── 字号梯度(对外暴露便于组件复用) ── */
   --fs-xs: 11.5px;

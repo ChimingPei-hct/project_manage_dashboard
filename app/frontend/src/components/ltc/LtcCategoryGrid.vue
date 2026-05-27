@@ -9,6 +9,7 @@ import LtcModuleCard from './LtcModuleCard.vue'
 import SubItemEditDialog from './SubItemEditDialog.vue'
 import ModuleStatusDialog from './ModuleStatusDialog.vue'
 import UserSearchInput from '../UserSearchInput.vue'
+import OwnerChip from '../OwnerChip.vue'
 
 /**
  * LTC 三级看板:Category(列) → Module(模块卡) → Sub-item(色块)。
@@ -198,7 +199,14 @@ const gridStyle = computed(() => {
         <div v-for="g in grouped" :key="`b-${g.category?.id || '__uncat'}`" class="col">
           <header class="col-head">
             <span class="cat-name">{{ g.category?.name || '未分类' }}</span>
-            <span v-if="g.category" class="cat-owner">Owner · {{ ownerLabel(g.category.owner_open_id) }}</span>
+            <OwnerChip
+              v-if="g.category && g.category.owner_open_id"
+              class="cat-owner"
+              :open-id="g.category.owner_open_id"
+              :size="22"
+              v-tooltip="'大类负责人'"
+            />
+            <span v-else-if="g.category" class="cat-owner cat-owner-unassigned">未指派</span>
             <button
               v-if="g.category && canEnterAdmin && editMode"
               type="button"
@@ -347,28 +355,49 @@ const gridStyle = computed(() => {
 
 .grid {
   display: grid;
-  gap: 12px;
+  gap: 16px;
   align-items: start;
 }
+/* ── Category 列升级为 surface 卡片 ── */
 .col {
-  display: flex; flex-direction: column; gap: 8px;
-  background: var(--panel-soft);
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 10px 12px;
+  box-shadow: var(--shadow-md);
+  padding: 16px 14px 14px;
   min-width: 0;
+  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+}
+.col:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 .col-head {
   display: flex; justify-content: space-between; align-items: baseline;
-  gap: 8px; padding: 2px 4px 8px;
+  gap: 8px; padding: 0 2px 10px;
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 2px;
 }
-.cat-name { font-size: 14px; font-weight: 700; color: var(--text); }
-.cat-owner { font-size: 11px; color: var(--text-muted); }
+.cat-name {
+  font-family: var(--font-serif);
+  font-size: 19px; font-weight: 600;
+  color: var(--text-strong);
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+.cat-owner { font-size: 12.5px; color: var(--text); font-weight: 500; }
+.cat-owner.cat-owner-unassigned {
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+.cat-owner :deep(.name) { color: var(--text-strong); font-weight: 600; letter-spacing: 0.03em; }
 .col-empty {
-  font-size: 11.5px; color: var(--text-dim);
-  padding: 6px 4px;
+  font-size: 12.5px; color: var(--text-muted);
+  padding: 8px 4px;
   font-style: italic;
 }
 

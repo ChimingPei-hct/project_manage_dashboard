@@ -49,7 +49,7 @@ const showAdminTool = ref('') // '' | 'perms' | 'snapshots'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
 function openMilestonesPage() {
-  window.open(`${window.location.pathname}?view=milestones`, '_blank', 'noopener')
+  pushView({ view: 'milestones' })
 }
 
 const { current, pushView } = useView()
