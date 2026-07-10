@@ -41,3 +41,12 @@ app/frontend.log
 .cache/
 global_skills
 design/module_updates.jsonl
+
+# Claude Code / AI 工具产物
+.agents/
+.claude/
+AGENTS.md
+
+# 临时截图脚本(非正式测试套件)
+app/frontend/tests/e2e/quick-snap*.mjs
+app/frontend/tests/e2e/snap-pdt-header.mjs

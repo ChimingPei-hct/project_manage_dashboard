@@ -6,6 +6,7 @@ import { kpiItemsOf, risksOf, subRiskOf } from '../composables/useStatusHelpers.
 import { adminApi, newId } from '../composables/useAdminApi.js'
 import { useContactCache, displayName } from '../composables/useContactCache.js'
 import { useEscClose } from '../composables/useEscClose.js'
+import { useFocusTrap } from '../composables/useFocusTrap.js'
 import UserSearchInput from './UserSearchInput.vue'
 import ConfirmDialog from './harness/ConfirmDialog.vue'
 
@@ -28,6 +29,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved', 'created', 'deleted', 'updated'])
 
 useEscClose(toRef(props, 'open'), () => emit('close'))
+
+const editBoxRef = ref(null)
+useFocusTrap(editBoxRef, toRef(props, 'open'))
 
 const COLORS = ['green', 'yellow', 'red']
 const COLOR_LABEL = { green: '绿/正常', yellow: '黄/预警', red: '红/Block', gray: '灰/未报' }
@@ -305,13 +309,13 @@ const deleteBody = computed(() => {
 
 <template>
   <div v-if="open" class="edit-mask" @click="onBackdrop">
-    <div class="edit-box" role="dialog" :aria-label="`编辑 ${module?.name || ''}`">
+    <div ref="editBoxRef" class="edit-box" role="dialog" :aria-label="`编辑 ${module?.name || ''}`">
       <header class="dlg-head">
         <div>
           <h3>{{ headerTitle }}</h3>
           <p class="sub">{{ headerSub }}</p>
         </div>
-        <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃未保存修改'">×</button>
+        <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃未保存修改'" aria-label="关闭弹窗">×</button>
       </header>
 
       <!-- Block 1:基本信息 -->
@@ -322,8 +326,8 @@ const deleteBody = computed(() => {
             <span class="lbl">卡名</span>
             <input v-model="sName" :readonly="!canEditStructure" placeholder="如:性能专项" />
           </label>
-          <div class="field field-owner">
-            <span class="lbl">Owner</span>
+          <div class="field field-owner" role="group" aria-label="Owner 字段">
+            <span class="lbl" id="owner-lbl">Owner</span>
             <UserSearchInput
               v-if="canEditStructure"
               :modelValue="sOwnerName"
@@ -362,7 +366,7 @@ const deleteBody = computed(() => {
             class="danger"
             v-tooltip="'从总览删除此卡(状态同步清除,历史保留)'"
             @click="confirmDeleteOpen = true"
-          >🗑 删除该卡</button>
+          aria-label="删除该卡">🗑 删除该卡</button>
         </div>
       </section>
 
@@ -422,7 +426,7 @@ const deleteBody = computed(() => {
         </div>
       </section>
 
-      <p v-if="errorMsg" class="err-banner">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="err-banner" role="alert">{{ errorMsg }}</p>
 
       <footer class="dlg-foot">
         <button @click="emit('close')" v-tooltip="'放弃未保存的修改'">取消</button>
@@ -442,7 +446,7 @@ const deleteBody = computed(() => {
         >{{ saving ? '保存中…' : '保存' }}</button>
       </footer>
 
-      <div v-if="toast" class="toast">{{ toast }}</div>
+      <div v-if="toast" class="toast" role="status" aria-live="polite">{{ toast }}</div>
 
       <ConfirmDialog
         :open="confirmDeleteOpen"
@@ -458,107 +462,130 @@ const deleteBody = computed(() => {
 
 <style scoped>
 .edit-mask {
-  position: fixed; inset: 0; background: rgba(15,23,42,0.42);
+  position: fixed; inset: 0; background: rgba(30,27,75,0.55);
   display: flex; align-items: center; justify-content: center;
-  z-index: 9000; backdrop-filter: blur(2px);
+  z-index: 9000; backdrop-filter: blur(6px);
+  animation: mask-fade-in var(--duration-normal) var(--ease-out) both;
 }
+@keyframes mask-fade-in { from { opacity: 0; } to { opacity: 1; } }
 .edit-box {
-  background: var(--panel); border-radius: var(--radius);
-  padding: 18px 22px; min-width: 540px; max-width: 680px; width: 92vw;
+  background: var(--panel); border-radius: var(--radius-lg);
+  padding: 24px; min-width: 560px; max-width: 720px; width: 92vw;
   max-height: 88vh; overflow-y: auto;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-dialog);
   position: relative;
+  border: 1px solid var(--border);
+  animation: box-slide-up var(--duration-slow) var(--ease-out) both;
 }
-.dlg-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
-h3 { margin: 0; font-size: 16px; font-weight: 700; }
-.sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
-.close { border: none; background: transparent; font-size: 22px; line-height: 1; padding: 0 6px; cursor: pointer; }
-.close:hover { color: var(--accent); background: transparent; }
+@keyframes box-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dlg-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); position: relative; }
+.dlg-head::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 40px; height: 2px; background: var(--gradient-brand); border-radius: 1px; }
+h3 { margin: 0; font-size: var(--fs-xl); font-weight: 600; font-family: var(--font-serif); }
+.sub { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.close { border: none; background: transparent; font-size: 24px; line-height: 1; padding: 0 8px; cursor: pointer; border-radius: var(--radius-sm); transition: all var(--transition); }
+.close:hover { color: var(--text-strong); background: var(--panel-soft); }
+.close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring);
+}
 
-.block { margin-bottom: 14px; }
+.block { margin-bottom: 18px; }
 .block-title {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 13px; color: var(--text); font-weight: 700;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
-  padding-bottom: 4px;
+  font-size: var(--fs-xs); color: var(--text-muted); font-weight: 600;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border-subtle);
+  text-transform: uppercase;
 }
-.req { color: var(--status-red); margin-left: 6px; font-size: 11px; font-weight: 500; }
+.req { color: var(--status-red); margin-left: 8px; font-size: var(--fs-xs); font-weight: 500; }
 
 .block-basic {
   background: var(--panel-soft);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius);
-  padding: 12px 14px;
+  padding: 14px 16px;
 }
 .block-basic .block-title { border-bottom: 1px solid var(--border); }
-.basic-grid { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr; gap: 8px; }
-.field { display: flex; flex-direction: column; gap: 3px; position: relative; }
-.field .lbl { font-size: 11px; color: var(--text-muted); }
-.field input { width: 100%; font-size: 13px; padding: 5px 8px; }
+.basic-grid { display: grid; grid-template-columns: 1.2fr 1fr 1.4fr; gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field .lbl { font-size: var(--fs-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+.field input { width: 100%; font-size: var(--fs-base); padding: 7px 10px; }
 .field input.readonly { background: var(--panel); color: var(--text-muted); }
 .field-owner { position: relative; }
-.owner-clear { position: absolute; right: 4px; top: 22px; font-size: 11px; padding: 1px 5px; }
+.owner-clear { position: absolute; right: 4px; top: 24px; font-size: var(--fs-xs); padding: 2px 6px; }
 
 .basic-row.light-row {
-  display: flex; align-items: center; gap: 12px;
-  margin-top: 10px;
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 12px;
 }
-.basic-row .lbl { font-size: 11px; color: var(--text-muted); }
-.basic-foot { display: flex; justify-content: flex-end; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-subtle); }
+.basic-row .lbl { font-size: var(--fs-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+.basic-foot { display: flex; justify-content: flex-end; margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-subtle); }
 
-.color-row { display: flex; gap: 4px; }
+.color-row { display: flex; gap: 6px; }
 .swatch {
-  width: 34px; height: 26px; border-radius: var(--radius);
-  border: 1px solid var(--border); color: #fff; font-size: 13px;
-  padding: 0; cursor: pointer;
+  width: 36px; height: 28px; border-radius: var(--radius);
+  border: 1px solid var(--border); color: #fff; font-size: var(--fs-sm);
+  padding: 0; cursor: pointer; transition: all var(--transition);
 }
-.swatch.sm { width: 22px; height: 20px; font-size: 10px; }
-.swatch.active { outline: 2px solid var(--accent); outline-offset: 1px; }
+.swatch.sm { width: 24px; height: 22px; font-size: var(--fs-xs); }
+.swatch.active { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.swatch:hover:not(.active) { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 
-.sub-list { display: flex; flex-direction: column; gap: 6px; }
-.sub-row { padding: 6px 8px; border-radius: var(--radius); background: var(--panel-soft); border: 1px solid var(--border-subtle); }
+.sub-list { display: flex; flex-direction: column; gap: 8px; }
+.sub-row { padding: 8px 10px; border-radius: var(--radius); background: var(--panel-soft); border: 1px solid var(--border-subtle); }
 .sub-row.focus { background: var(--accent-soft); border-color: var(--accent); }
-.sub-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.sub-name { font-size: 13px; font-weight: 500; }
-.sub-note-input { width: 100%; margin-top: 6px; font-size: 12px; }
+.sub-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sub-name { font-size: var(--fs-sm); font-weight: 500; }
+.sub-note-input { width: 100%; margin-top: 8px; font-size: var(--fs-sm); }
 
 .mini-add, .mini-del {
-  font-size: 11px; padding: 2px 8px; border-radius: var(--radius);
-  border: 1px solid var(--border); background: var(--panel); cursor: pointer;
+  font-size: var(--fs-xs); padding: 3px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--panel); cursor: pointer; transition: all var(--transition);
 }
 .mini-add { color: var(--accent); border-color: var(--accent); }
+.mini-add:hover { background: var(--accent-soft); transform: translateY(-1px); }
 .mini-del { color: var(--text-muted); }
-.mini-del:hover { color: var(--status-red); border-color: var(--status-red); }
+.mini-del:hover { color: var(--status-red); border-color: var(--status-red); transform: translateY(-1px); }
 
-.kpi-table { display: flex; flex-direction: column; gap: 4px; }
-.kpi-row { display: grid; grid-template-columns: 1.4fr 1fr 110px 28px; gap: 6px; align-items: stretch; }
-.kpi-row.head { font-size: 11px; color: var(--text-dim); padding: 0 4px; align-items: center; }
-.kpi-row input, .kpi-row select { font-size: 12.5px; padding: 4px 8px; }
-.kpi-row textarea { font-size: 12.5px; padding: 6px 8px; resize: vertical; min-height: 40px; font-family: inherit; }
+.kpi-table { display: flex; flex-direction: column; gap: 6px; }
+.kpi-row { display: grid; grid-template-columns: 1.4fr 1fr 110px 30px; gap: 8px; align-items: stretch; }
+.kpi-row.head { font-size: var(--fs-xs); color: var(--text-dim); padding: 0 4px; align-items: center; letter-spacing: 0.03em; text-transform: uppercase; }
+.kpi-row input, .kpi-row select { font-size: var(--fs-sm); padding: 6px 10px; }
+.kpi-row textarea { font-size: var(--fs-sm); padding: 8px 10px; resize: vertical; min-height: 44px; font-family: inherit; line-height: 1.5; }
 .kpi-row select { align-self: start; }
 .kpi-row .mini-del { align-self: start; }
 
-.risk-list { display: flex; flex-direction: column; gap: 6px; }
-.risk-row { display: grid; grid-template-columns: 1fr 28px; gap: 6px; align-items: stretch; padding: 6px; border-radius: var(--radius); background: var(--status-red-bg); }
-.risk-row textarea { font-size: 12.5px; padding: 6px 8px; resize: vertical; min-height: 36px; }
+.risk-list { display: flex; flex-direction: column; gap: 8px; }
+.risk-row { display: grid; grid-template-columns: 1fr 30px; gap: 8px; align-items: stretch; padding: 8px; border-radius: var(--radius); background: var(--status-red-bg); border: 1px solid var(--status-red-border); }
+.risk-row textarea { font-size: var(--fs-sm); padding: 8px 10px; resize: vertical; min-height: 40px; line-height: 1.5; }
 
-.hint { font-size: 12px; color: var(--text-dim); padding: 6px 0; }
+.hint { font-size: var(--fs-sm); color: var(--text-dim); padding: 8px 0; }
 .hint.err { color: var(--status-red); }
 
 .err-banner {
-  background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30);
-  color: var(--status-red); padding: 6px 10px; border-radius: var(--radius);
-  font-size: 12px; margin: 0 0 10px;
+  background: var(--status-red-bg); border: 1px solid var(--status-red-border);
+  color: var(--status-red-text-strong); padding: 10px 12px; border-radius: var(--radius);
+  font-size: var(--fs-sm); margin: 0 0 12px;
 }
 
-.dlg-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
-.danger { background: var(--status-red); color: #fff; border-color: var(--status-red); }
-.danger:hover { opacity: 0.9; }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
 .toast {
-  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
-  background: rgba(15,23,42,0.95); color: #fff;
-  padding: 6px 14px; border-radius: var(--radius); font-size: 12px;
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+  background: rgba(30,27,75,0.92); color: #fff;
+  padding: 8px 16px; border-radius: var(--radius); font-size: var(--fs-sm); box-shadow: var(--shadow-md);
+  animation: toast-slide-up var(--duration-normal) var(--ease-out) both;
+}
+@keyframes toast-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swatch { transition: none; }
+  .edit-mask, .edit-box, .toast { animation: none; }
 }
 </style>
