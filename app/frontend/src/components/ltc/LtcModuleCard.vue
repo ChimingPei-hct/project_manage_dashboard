@@ -2,6 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useContactCache, displayName } from '../../composables/useContactCache.js'
 import { risksOf, subRiskOf } from '../../composables/useStatusHelpers.js'
+import { useAuth } from '../../composables/useAuth.js'
 import OwnerChip from '../OwnerChip.vue'
 
 /**
@@ -69,9 +70,15 @@ const riskySubs = computed(() => subs.value
 const hasRiskContent = computed(() => moduleRisks.value.length > 0 || riskySubs.value.length > 0)
 
 function colorOf(sid) { return subColors.value[sid] || 'gray' }
+const { me } = useAuth()
+/* canEdit=false 时有两种情况:
+   1. 当前账号确实没权限 → "查看状态(无编辑权限)"
+   2. 账号是 admin/super 但 LTC 编辑模式未开启 → 提示去顶部开编辑模式 */
+const isAdminish = computed(() => !!(me.value && (me.value.is_super || me.value.is_pdt_admin || me.value.is_ltc_admin)))
 function tipOf(sub) {
-  if (!props.canEdit) return `${sub.name} · 查看状态(无编辑权限)`
-  return `编辑「${sub.name}」的状态灯与风险说明`
+  if (props.canEdit) return `编辑「${sub.name}」的状态灯与风险说明`
+  if (isAdminish.value) return `${sub.name} · 点顶部「编辑」按钮开启编辑模式`
+  return `${sub.name} · 查看状态(无编辑权限)`
 }
 </script>
 
@@ -80,8 +87,11 @@ function tipOf(sub) {
     <header
       class="title"
       :class="[`tone-${moduleColor}`, { clickable: canEdit, dimmed: !moduleTitleVisible }]"
-      v-tooltip="canEdit ? '点击编辑本模块的整体状态色与风险说明' : ''"
+      v-tooltip="canEdit ? '点击编辑本模块的整体状态色与风险说明' : (isAdminish ? '点顶部「编辑」按钮开启编辑模式' : '')"
+      :role="canEdit ? 'button' : undefined"
+      :tabindex="canEdit ? 0 : undefined"
       @click="canEdit && emit('edit-module-status')"
+      @keydown.enter.space.prevent="canEdit && emit('edit-module-status')"
     >
       <span class="name">{{ module.name }}</span>
       <OwnerChip
@@ -95,6 +105,7 @@ function tipOf(sub) {
         v-if="canEdit"
         type="button"
         class="cog"
+        aria-label="编辑模块结构"
         v-tooltip="'编辑模块结构(改名、Owner、子项、KPI)'"
         @click.stop="emit('edit-module-structure')"
       >⚙</button>
@@ -160,12 +171,12 @@ function tipOf(sub) {
 <style scoped>
 .ltc-mod-card {
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--panel);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
   display: flex; flex-direction: column;
-  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+  transition: all var(--transition);
 }
 .ltc-mod-card:hover {
   box-shadow: var(--shadow-md);
@@ -175,116 +186,118 @@ function tipOf(sub) {
 .title {
   position: relative;
   display: flex; justify-content: space-between; align-items: center;
-  gap: 10px;
-  padding: 9px 12px 9px 18px;
+  gap: 12px;
+  padding: 12px 14px 12px 20px;
   border-bottom: 1px solid var(--border-subtle);
   transition: background var(--transition), filter var(--transition);
 }
 .title .name {
   flex: 1 1 auto; min-width: 0;
   font-family: var(--font-serif);
-  font-size: 15.5px; font-weight: 600;
+  font-size: var(--fs-lg); font-weight: 600;
   color: var(--text-strong);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   line-height: 1.3;
 }
 .title::before {
   content: '';
   position: absolute;
-  left: 8px; top: 50%; transform: translateY(-50%);
-  width: 4px; height: 60%;
+  left: 10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 65%;
   border-radius: 2px;
   background: var(--text-dim);
   transition: background var(--transition);
 }
-.title .name { flex: 1 1 auto; min-width: 0; }
 .title .owner {
   flex: 0 0 auto;
-  padding: 2px 7px 2px 4px;
+  padding: 3px 8px 3px 5px;
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.92);
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
-/* OwnerChip 在 tone 背景上的内部样式微调:头像 + 姓名都要清晰 */
-.title .owner :deep(.owner-chip) { font-size: 12px; color: var(--text-strong); }
+.title .owner :deep(.owner-chip) { font-size: var(--fs-xs); color: var(--text-strong); }
 .title .owner :deep(.name) {
   font-family: var(--font-sans);
   color: var(--text-strong); font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
 }
 .title .owner :deep(.avatar) { border-color: var(--border); }
 .title.tone-gray .owner { background: var(--panel); }
 .title.tone-green {
-  background: var(--status-green-bg-strong);
+  background: var(--status-green-bg);
   color: var(--text-strong);
-  border-bottom-color: var(--status-green-border-strong);
+  border-bottom-color: var(--status-green-border);
 }
-.title.tone-green::before { background: var(--status-green); }
+.title.tone-green::before { background: linear-gradient(180deg, var(--status-green), rgba(22,163,74,0.4)); }
 .title.tone-yellow {
-  background: var(--status-yellow-bg-strong);
+  background: var(--status-yellow-bg);
   color: var(--text-strong);
-  border-bottom-color: var(--status-yellow-border-strong);
+  border-bottom-color: var(--status-yellow-border);
 }
-.title.tone-yellow::before { background: var(--status-yellow); }
+.title.tone-yellow::before { background: linear-gradient(180deg, var(--status-yellow), rgba(217,119,6,0.4)); }
 .title.tone-red {
-  background: var(--status-red-bg-strong);
+  background: var(--status-red-bg);
   color: var(--text-strong);
-  border-bottom-color: var(--status-red-border-strong);
+  border-bottom-color: var(--status-red-border);
 }
-.title.tone-red::before { background: var(--status-red); }
+.title.tone-red::before { background: linear-gradient(180deg, var(--status-red), rgba(220,38,38,0.4)); }
 .title.tone-gray { background: var(--panel-soft); color: var(--text-muted); }
 .title.clickable { cursor: pointer; }
-.title.clickable:hover { filter: brightness(0.95); }
-.title.dimmed { opacity: 0.42; }
+.title.clickable:hover { filter: brightness(0.96); }
+.title.clickable:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-ring); filter: brightness(0.96); }
+.title.dimmed { opacity: 0.45; }
 .cog {
   flex: 0 0 auto;
   border: none; background: transparent;
-  font-size: 13px; line-height: 1;
-  padding: 1px 4px; border-radius: var(--radius);
+  font-size: var(--fs-sm); line-height: 1;
+  padding: 2px 6px; border-radius: var(--radius-sm);
   cursor: pointer; color: inherit;
-  opacity: 0.55;
+  opacity: 0.5;
+  transition: all var(--transition);
 }
-.cog:hover { opacity: 1; background: rgba(255,255,255,0.55); }
+.cog:hover { opacity: 1; background: rgba(255,255,255,0.6); }
+.cog:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring);
+  opacity: 1;
+}
 .title.tone-gray .cog:hover { background: var(--panel); }
 
 .chips {
   display: flex; flex-wrap: wrap; gap: 6px;
-  padding: 8px 10px 10px;
+  padding: 10px 12px 12px;
 }
 .chip {
   font-family: var(--font-sans);
-  font-size: 13px; line-height: 1.2;
-  padding: 5px 12px;
+  font-size: var(--fs-sm); line-height: 1.2;
+  padding: 6px 12px;
   border-radius: var(--radius);
   border: 1px solid transparent;
   cursor: pointer;
   font-weight: 600;
   white-space: nowrap;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
   font-feature-settings: 'tnum', 'cv11', 'ss01';
-  transition:
-    filter var(--transition),
-    transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow var(--transition);
+  transition: all var(--transition);
 }
 .chip:disabled { cursor: default; }
 .chip.tone-green {
   background: var(--status-green); color: #fff; border-color: var(--status-green);
-  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.25);
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35), 0 0 0 1px rgba(22, 163, 74, 0.1);
 }
 .chip.tone-yellow {
   background: var(--status-yellow); color: #fff; border-color: var(--status-yellow);
-  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.25);
+  box-shadow: 0 2px 4px rgba(217, 119, 6, 0.35), 0 0 0 1px rgba(217, 119, 6, 0.1);
 }
 .chip.tone-red {
   background: var(--status-red); color: #fff; border-color: var(--status-red);
-  box-shadow: 0 1px 2px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35), 0 0 0 1px rgba(220, 38, 38, 0.1);
 }
 .chip.tone-gray { background: var(--panel-soft); color: var(--text-muted); border-color: var(--border); }
 .chip:not(:disabled):hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px) scale(1.03);
+  filter: brightness(1.08);
+  transform: translateY(-1px) scale(1.02);
   box-shadow: var(--shadow-md);
 }
 .chip:not(:disabled):active { transform: translateY(0) scale(0.98); }
@@ -301,69 +314,81 @@ function tipOf(sub) {
 }
 
 .empty {
-  font-size: 11.5px; color: var(--text-dim);
-  padding: 6px 10px 8px;
+  font-size: var(--fs-xs); color: var(--text-dim);
+  padding: 8px 12px 10px;
 }
 
-/* 风险段 */
 .seg-divider {
-  height: 1px; margin: 0 10px;
+  height: 1px; margin: 0 12px;
   background: var(--border-subtle);
 }
 .risk-body {
-  display: flex; flex-direction: column; gap: 6px;
-  padding: 10px 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 12px 14px;
 }
-.mod-risks { display: flex; flex-direction: column; gap: 6px; }
+.mod-risks { display: flex; flex-direction: column; gap: 8px; }
 .risk-line {
-  display: flex; gap: 9px; align-items: flex-start;
+  display: flex; gap: 10px; align-items: flex-start;
   font-family: var(--font-sans);
-  font-size: 13.5px; line-height: 1.65;
-  letter-spacing: 0.03em;
-  padding: 9px 12px;
+  font-size: var(--fs-sm); line-height: 1.6;
+  letter-spacing: 0.01em;
+  padding: 10px 12px;
   border-radius: var(--radius);
   background: var(--panel-soft);
   border-left: 3px solid transparent;
   font-weight: 500;
   color: var(--text-strong);
-  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+  transition: all var(--transition);
 }
 .risk-line.tone-red {
-  background: var(--status-red-bg-strong);
-  color: var(--text-strong);
+  background: var(--status-red-bg);
+  color: var(--status-red-text-strong);
   border-left-color: var(--status-red);
   font-weight: 600;
+  border: 1px solid var(--status-red-border);
+  border-left: 3px solid var(--status-red);
 }
 .risk-line.tone-yellow {
-  background: var(--status-yellow-bg-strong);
-  color: var(--text-strong);
+  background: var(--status-yellow-bg);
+  color: var(--status-yellow-text-strong);
   border-left-color: var(--status-yellow);
   font-weight: 600;
+  border: 1px solid var(--status-yellow-border);
+  border-left: 3px solid var(--status-yellow);
 }
 .risk-line:hover {
-  transform: translateX(2px);
-  filter: brightness(0.98);
+  transform: translateX(3px);
+  filter: brightness(0.97);
   box-shadow: var(--shadow-sm);
 }
 .risk-line .dot {
-  width: 6px; height: 6px; border-radius: 2px;
+  width: 7px; height: 7px; border-radius: 50%;
   display: inline-block; margin-top: 5px; flex-shrink: 0;
+  box-shadow: 0 0 0 2px currentColor;
 }
 .risk-line.tone-red .dot { background: var(--status-red); }
 .risk-line.tone-yellow .dot { background: var(--status-yellow); }
 .risk-line .txt { word-break: break-word; }
 
-.sub-risks { display: flex; flex-direction: column; gap: 6px; }
+.sub-risks { display: flex; flex-direction: column; gap: 8px; }
 .sub-line {
-  display: grid; grid-template-columns: minmax(80px, auto) 1fr;
-  gap: 10px; align-items: start;
+  display: grid; grid-template-columns: minmax(90px, auto) 1fr;
+  gap: 12px; align-items: start;
 }
 .sub-line .chip { align-self: start; }
 .sub-text {
   font-family: var(--font-sans);
-  font-size: 13px; line-height: 1.6;
-  letter-spacing: 0.025em;
+  font-size: var(--fs-sm); line-height: 1.6;
+  letter-spacing: 0.01em;
   color: var(--text-strong); word-break: break-word;
-  padding-top: 3px;
+  padding-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ltc-mod-card:hover { transform: none; }
+  .chip:not(:disabled):hover { transform: none; }
+  .chip:not(:disabled):active { transform: none; }
+  .chip.tile-add:hover { transform: none; }
+  .risk-line:hover { transform: none; }
 }
 </style>

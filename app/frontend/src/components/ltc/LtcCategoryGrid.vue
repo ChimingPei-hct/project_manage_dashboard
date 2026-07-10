@@ -5,6 +5,7 @@ import { useContactCache, displayName } from '../../composables/useContactCache.
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
 import { useEscClose } from '../../composables/useEscClose.js'
+import { useFocusTrap } from '../../composables/useFocusTrap.js'
 import LtcModuleCard from './LtcModuleCard.vue'
 import SubItemEditDialog from './SubItemEditDialog.vue'
 import ModuleStatusDialog from './ModuleStatusDialog.vue'
@@ -70,11 +71,15 @@ const editingModCan = computed(() => editingMod.value ? props.canEditModuleStatu
 const newMod = ref(null) // { categoryId, categoryName, name, saving, err }
 const newModOpen = computed(() => newMod.value !== null)
 useEscClose(newModOpen, () => { newMod.value = null })
+const newModRef = ref(null)
+useFocusTrap(newModRef, newModOpen)
 
 // ---- 大类 Owner 指派 (仅在 editMode + canEnterAdmin 时显示按钮) ----
 const ownerPicker = ref(null) // { catId, busy, err } | null
 const ownerPickerOpen = computed(() => ownerPicker.value !== null)
 useEscClose(ownerPickerOpen, () => { ownerPicker.value = null })
+const ownerPickerRef = ref(null)
+useFocusTrap(ownerPickerRef, ownerPickerOpen)
 function openOwnerPicker(catId) { ownerPicker.value = { catId, busy: false, err: '' } }
 function closeOwnerPicker() { ownerPicker.value = null }
 async function assignCatOwner(openId) {
@@ -97,6 +102,8 @@ async function assignCatOwner(openId) {
 const newCat = ref(null) // { name, saving, err } | null
 const newCatOpen = computed(() => newCat.value !== null)
 useEscClose(newCatOpen, () => { newCat.value = null })
+const newCatRef = ref(null)
+useFocusTrap(newCatRef, newCatOpen)
 function openNewCat() { newCat.value = { name: '', saving: false, err: '' } }
 function closeNewCat() { newCat.value = null }
 function genCatId(name) {
@@ -256,14 +263,14 @@ const gridStyle = computed(() => {
     />
 
     <!-- inline 新建模块对话 -->
-    <div v-if="newMod" class="mask" @click.self="closeNewMod">
-      <div class="box" role="dialog">
+    <div v-if="newMod" ref="newModRef" class="mask" @click.self="closeNewMod">
+      <div class="box" role="dialog" aria-label="新建模块">
         <header class="head">
           <div>
             <h3>新建本 LTC 模块</h3>
             <p class="sub">大类:{{ newMod.categoryName }}</p>
           </div>
-          <button class="close" @click="closeNewMod" v-tooltip="'关闭'">×</button>
+          <button class="close" @click="closeNewMod" v-tooltip="'关闭'" aria-label="关闭弹窗">×</button>
         </header>
         <section class="block">
           <div class="block-title">模块名</div>
@@ -271,12 +278,13 @@ const gridStyle = computed(() => {
             v-model="newMod.name"
             placeholder="如:智驾 OTA、网关、ZP22 专属诊断"
             maxlength="60"
+            autocomplete="off"
             @keydown.enter="submitNewMod"
             v-tooltip="'新模块的显示名(本 LTC 私有)'"
           />
           <p class="hint">创建后可点模块头 ⚙ 进一步加 Owner / sub_items / KPI。</p>
         </section>
-        <p v-if="newMod.err" class="err-banner">{{ newMod.err }}</p>
+        <p v-if="newMod.err" class="err-banner" role="alert">{{ newMod.err }}</p>
         <footer class="foot">
           <button @click="closeNewMod">取消</button>
           <button
@@ -290,13 +298,13 @@ const gridStyle = computed(() => {
     </div>
 
     <!-- 大类 Owner 指派弹窗(仅 editMode + canEnterAdmin 才能触发) -->
-    <div v-if="ownerPicker" class="mask">
-      <div class="box">
+    <div v-if="ownerPicker" ref="ownerPickerRef" class="mask">
+      <div class="box" role="dialog" aria-label="指派大类 Owner">
         <header class="mh">
           <h3>指派大类 Owner</h3>
-          <button class="close" v-tooltip="'关闭'" @click="closeOwnerPicker">×</button>
+          <button class="close" v-tooltip="'关闭'" aria-label="关闭弹窗" @click="closeOwnerPicker">×</button>
         </header>
-        <p v-if="ownerPicker.err" class="err">{{ ownerPicker.err }}</p>
+        <p v-if="ownerPicker.err" class="err" role="alert">{{ ownerPicker.err }}</p>
         <p class="hint">搜索通讯录人员并指派为本大类负责人。指派后该大类标题旁会显示 Owner 姓名。</p>
         <UserSearchInput
           :modelValue="null"
@@ -311,13 +319,13 @@ const gridStyle = computed(() => {
     </div>
 
     <!-- 新建大类弹窗(本 LTC 内,scope=ltc) -->
-    <div v-if="newCat" class="mask">
-      <div class="box">
+    <div v-if="newCat" ref="newCatRef" class="mask">
+      <div class="box" role="dialog" aria-label="新建大类">
         <header class="mh">
           <h3>新建大类</h3>
-          <button class="close" v-tooltip="'关闭'" @click="closeNewCat">×</button>
+          <button class="close" v-tooltip="'关闭'" aria-label="关闭弹窗" @click="closeNewCat">×</button>
         </header>
-        <p v-if="newCat.err" class="err">{{ newCat.err }}</p>
+        <p v-if="newCat.err" class="err" role="alert">{{ newCat.err }}</p>
         <p class="hint">新建本 LTC 私有大类(不影响模板池与其他 LTC)。创建后即可在该大类下添加模块。</p>
         <label class="block">
           <span class="block-title">大类名称 *</span>
@@ -325,6 +333,7 @@ const gridStyle = computed(() => {
             v-model="newCat.name"
             placeholder="如:感知 / 规控 / 工具与交付"
             maxlength="32"
+            autocomplete="off"
             autofocus
             @keyup.enter="submitNewCat"
           />
@@ -344,139 +353,184 @@ const gridStyle = computed(() => {
 </template>
 
 <style scoped>
-.ltc-cat-wrap { display: flex; flex-direction: column; gap: 18px; }
+.ltc-cat-wrap { display: flex; flex-direction: column; gap: 20px; }
 .empty-hint {
-  padding: 24px; background: var(--panel-soft);
-  border: 1px dashed var(--border); border-radius: var(--radius);
-  font-size: 13px; color: var(--text-muted); text-align: center;
+  padding: 32px; background: var(--panel);
+  border: 1px dashed var(--border-strong); border-radius: var(--radius-lg);
+  font-size: var(--fs-sm); color: var(--text-muted); text-align: center;
+  box-shadow: var(--shadow-sm);
 }
 
-.grid-section { display: flex; flex-direction: column; gap: 8px; }
+.grid-section { display: flex; flex-direction: column; gap: 10px; }
 
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   align-items: start;
 }
-/* ── Category 列升级为 surface 卡片 ── */
 .col {
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; gap: 12px;
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: 16px 14px 14px;
+  padding: 18px 16px 16px;
   min-width: 0;
-  transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+  transition: all var(--transition);
 }
 .col:hover {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-card-hover);
   transform: translateY(-2px);
   border-color: var(--border-strong);
 }
 .col-head {
   display: flex; justify-content: space-between; align-items: baseline;
-  gap: 8px; padding: 0 2px 10px;
+  gap: 10px; padding: 0 4px 12px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  position: relative;
+}
+.col-head::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 4px;
+  width: 40px; height: 2px;
+  background: var(--gradient-brand);
+  border-radius: 1px;
 }
 .cat-name {
   font-family: var(--font-serif);
-  font-size: 19px; font-weight: 600;
+  font-size: var(--fs-xl); font-weight: 600;
   color: var(--text-strong);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
   line-height: 1.3;
 }
-.cat-owner { font-size: 12.5px; color: var(--text); font-weight: 500; }
+.cat-owner { font-size: var(--fs-xs); color: var(--text); font-weight: 500; }
 .cat-owner.cat-owner-unassigned {
   font-family: var(--font-sans);
-  color: var(--text-muted);
+  color: var(--text-dim);
   font-style: italic;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  font-size: var(--fs-xs);
 }
-.cat-owner :deep(.name) { color: var(--text-strong); font-weight: 600; letter-spacing: 0.03em; }
+.cat-owner :deep(.name) { color: var(--text-strong); font-weight: 600; letter-spacing: 0.02em; }
 .col-empty {
-  font-size: 12.5px; color: var(--text-muted);
-  padding: 8px 4px;
+  font-size: var(--fs-sm); color: var(--text-dim);
+  padding: 12px 4px;
   font-style: italic;
 }
 
 .add-mod-tile {
-  margin-top: 4px;
+  margin-top: 6px;
   border: 1px dashed var(--border);
   background: transparent; color: var(--text-muted);
-  padding: 6px 10px; font-size: 12px;
+  padding: 8px 12px; font-size: var(--fs-sm);
   border-radius: var(--radius); cursor: pointer;
   font-weight: 500;
+  transition: all var(--transition);
 }
-.add-mod-tile:hover { color: var(--accent); border-color: var(--accent); background: var(--panel); }
+.add-mod-tile:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+.add-mod-tile:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring);
+  border-color: var(--accent);
+}
 
 .mask {
-  position: fixed; inset: 0; background: rgba(15,23,42,0.42);
+  position: fixed; inset: 0; background: rgba(30, 27, 75, 0.6);
   display: flex; align-items: center; justify-content: center;
-  z-index: 9100; backdrop-filter: blur(2px);
+  z-index: 9100; backdrop-filter: blur(4px);
 }
 .box {
-  background: var(--panel); border-radius: var(--radius);
-  padding: 18px 22px; min-width: 380px; max-width: 480px; width: 92vw;
-  box-shadow: var(--shadow-lg);
+  background: var(--panel); border-radius: var(--radius-lg);
+  padding: 24px; min-width: 420px; max-width: 520px; width: 92vw;
+  box-shadow: var(--shadow-dialog);
+  border: 1px solid var(--border);
 }
-.head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-h3 { margin: 0; font-size: 15px; font-weight: 700; }
-.sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
-.close { border: none; background: transparent; font-size: 22px; line-height: 1; padding: 0 6px; cursor: pointer; color: var(--text-muted); }
-.block { margin-bottom: 14px; }
-.block-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+h3 { margin: 0; font-size: var(--fs-lg); font-weight: 600; font-family: var(--font-serif); }
+.sub { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.close { border: none; background: transparent; font-size: 24px; line-height: 1; padding: 0 8px; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); transition: all var(--transition); }
+.close:hover { background: var(--panel-soft); color: var(--text-strong); }
+.block { margin-bottom: 16px; }
+.block-title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); margin-bottom: 8px; letter-spacing: 0.04em; text-transform: uppercase; }
 input {
-  width: 100%; font-size: 13px; padding: 6px 10px;
+  width: 100%; font-size: var(--fs-base); padding: 8px 12px;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--panel); font-family: inherit;
 }
-.hint { font-size: 11px; padding: 6px 0 0; margin: 0; color: var(--text-muted); }
+.hint { font-size: var(--fs-xs); padding: 8px 0 0; margin: 0; color: var(--text-muted); }
 .err-banner {
-  background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30);
-  color: var(--status-red); padding: 6px 10px; border-radius: var(--radius);
-  font-size: 12px; margin: 0 0 10px;
+  background: var(--status-red-bg); border: 1px solid var(--status-red-border);
+  color: var(--status-red-text-strong); padding: 8px 12px; border-radius: var(--radius);
+  font-size: var(--fs-sm); margin: 0 0 12px;
 }
-.foot { display: flex; justify-content: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); }
+.foot { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-subtle); }
 .mf .primary,
 .foot .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .mf .primary:disabled,
-.foot .primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.foot .primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* 大类 Owner 指派按钮 + 弹窗 */
 .cat-owner-edit {
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: var(--fs-xs);
+  padding: 3px 10px;
   border-radius: var(--radius);
-  border: 1px dashed var(--accent);
+  border: 1px solid var(--accent);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
-  margin-left: 6px;
+  margin-left: 8px;
+  font-weight: 500;
+  transition: all var(--transition);
 }
-.cat-owner-edit:hover { background: var(--accent-soft); }
+.cat-owner-edit:hover { background: var(--accent-soft); transform: translateY(-1px); }
+.cat-owner-edit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-ring);
+}
 
-/* 新建大类按钮 — 顶部条 + 空态 共用 */
-.new-cat-bar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.new-cat-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
 .new-cat-btn {
-  font-size: 12px;
-  padding: 4px 12px;
+  font-size: var(--fs-sm);
+  padding: 6px 14px;
   border-radius: var(--radius);
   border: 1px dashed var(--accent);
   background: transparent;
   color: var(--accent);
   cursor: pointer;
   font-weight: 500;
+  transition: all var(--transition);
 }
-.new-cat-btn:hover { background: var(--accent-soft); }
-.empty-hint .new-cat-btn { margin-top: 12px; }
-.mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.mh h3 { margin: 0; font-size: 15px; font-weight: 700; }
-.mf { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; margin-top: 12px; border-top: 1px solid var(--border-subtle); }
+.new-cat-btn:hover { background: var(--accent-soft); transform: translateY(-1px); }
+.empty-hint .new-cat-btn { margin-top: 16px; }
+.mh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle); }
+.mh h3 { margin: 0; font-size: var(--fs-lg); font-weight: 600; font-family: var(--font-serif); }
+.mf { display: flex; justify-content: flex-end; gap: 10px; padding-top: 14px; margin-top: 14px; border-top: 1px solid var(--border-subtle); }
 .mf button {
-  font-size: 12px; padding: 5px 12px; border: 1px solid var(--border);
+  font-size: var(--fs-sm); padding: 7px 14px; border: 1px solid var(--border);
   background: var(--panel); border-radius: var(--radius); cursor: pointer;
+  transition: all var(--transition);
 }
-.err { background: var(--status-red-bg); color: var(--status-red); padding: 6px 10px; border-radius: var(--radius); font-size: 12px; margin: 0 0 8px; }
+.mf button:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.err {
+  background: var(--status-red-bg);
+  color: var(--status-red-text-strong);
+  border: 1px solid var(--status-red-border);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: var(--fs-sm);
+  margin: 0 0 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .col:hover { transform: none; }
+  .add-mod-tile:hover { transform: none; }
+  .cat-owner-edit:hover { transform: none; }
+  .new-cat-btn:hover { transform: none; }
+}
 </style>

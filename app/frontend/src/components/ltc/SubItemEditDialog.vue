@@ -4,6 +4,7 @@ import { api } from '../../api/client.js'
 import { useDashboard } from '../../composables/useDashboard.js'
 import { adminApi, newId } from '../../composables/useAdminApi.js'
 import { useEscClose } from '../../composables/useEscClose.js'
+import { useFocusTrap } from '../../composables/useFocusTrap.js'
 
 /**
  * 子项色块 编辑/新建/删除 弹窗。
@@ -22,6 +23,9 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 useEscClose(toRef(props, 'open'), () => emit('close'))
+
+const boxRef = ref(null)
+useFocusTrap(boxRef, toRef(props, 'open'))
 
 const { status, refresh } = useDashboard()
 const isCreate = computed(() => !props.subItem)
@@ -158,13 +162,13 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
 
 <template>
   <div v-if="open" class="mask" @click="onBackdrop">
-    <div class="box" role="dialog">
+    <div ref="boxRef" class="box" role="dialog" aria-label="编辑子项状态">
       <header class="head">
         <div>
           <h3>{{ isCreate ? '新增子项' : (subItem?.name || '子项') }}</h3>
           <p class="sub">{{ module?.name || '' }}</p>
         </div>
-        <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃修改'">×</button>
+        <button class="close" @click="emit('close')" v-tooltip="'关闭弹窗,放弃修改'" aria-label="关闭弹窗">×</button>
       </header>
 
       <section v-if="isCreate" class="block">
@@ -209,7 +213,7 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
         <p v-if="requireRisk && !riskText.trim()" class="hint err">非绿态必须填写风险说明</p>
       </section>
 
-      <p v-if="errorMsg" class="err-banner">{{ errorMsg }}</p>
+      <p v-if="errorMsg" class="err-banner" role="alert">{{ errorMsg }}</p>
 
       <footer class="foot">
         <button
@@ -246,81 +250,99 @@ function onBackdrop(e) { if (e.target === e.currentTarget) emit('close') }
 
 <style scoped>
 .mask {
-  position: fixed; inset: 0; background: rgba(15,23,42,0.42);
+  position: fixed; inset: 0; background: rgba(30,27,75,0.55);
   display: flex; align-items: center; justify-content: center;
-  z-index: 9100; backdrop-filter: blur(2px);
+  z-index: 9100; backdrop-filter: blur(6px);
+  animation: mask-fade-in var(--duration-normal) var(--ease-out) both;
 }
+@keyframes mask-fade-in { from { opacity: 0; } to { opacity: 1; } }
 .box {
-  background: var(--panel); border-radius: var(--radius);
-  padding: 18px 22px; min-width: 420px; max-width: 540px; width: 92vw;
-  box-shadow: var(--shadow-lg); position: relative;
+  background: var(--panel); border-radius: var(--radius-lg);
+  padding: 24px; min-width: 420px; max-width: 540px; width: 92vw;
+  box-shadow: var(--shadow-dialog); position: relative;
+  border: 1px solid var(--border);
+  animation: box-slide-up var(--duration-slow) var(--ease-out) both;
 }
-.head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-h3 { margin: 0; font-size: 15px; font-weight: 700; }
-.sub { margin: 2px 0 0; font-size: 12px; color: var(--text-muted); }
-.close { border: none; background: transparent; font-size: 22px; line-height: 1; padding: 0 6px; cursor: pointer; color: var(--text-muted); }
-.close:hover { color: var(--accent); }
+@keyframes box-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+h3 { margin: 0; font-size: var(--fs-lg); font-weight: 600; font-family: var(--font-serif); }
+.sub { margin: 4px 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
+.close { border: none; background: transparent; font-size: 24px; line-height: 1; padding: 0 8px; cursor: pointer; color: var(--text-muted); border-radius: var(--radius-sm); transition: all var(--transition); }
+.close:hover { color: var(--text-strong); background: var(--panel-soft); }
 
-.block { margin-bottom: 14px; }
+.block { margin-bottom: 16px; }
 .block-title {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: 0.5px;
-  margin-bottom: 6px;
+  font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); letter-spacing: 0.04em;
+  margin-bottom: 8px; text-transform: uppercase;
 }
-.req { font-size: 11px; color: var(--status-red); font-weight: 500; }
+.req { font-size: var(--fs-xs); color: var(--status-red); font-weight: 500; }
 
 input {
-  width: 100%; font-size: 13px; padding: 6px 10px;
+  width: 100%; font-size: var(--fs-base); padding: 8px 12px;
   border: 1px solid var(--border); border-radius: var(--radius);
   background: var(--panel); font-family: inherit;
 }
 
-.color-row { display: flex; gap: 6px; }
+.color-row { display: flex; gap: 8px; }
 .swatch {
-  width: 40px; height: 28px; border-radius: var(--radius);
-  border: 1px solid var(--border); color: #fff; font-size: 13px;
+  width: 44px; height: 30px; border-radius: var(--radius);
+  border: 1px solid var(--border); color: #fff; font-size: var(--fs-sm);
   padding: 0; cursor: pointer;
+  transition: all var(--transition);
 }
-.swatch.active { outline: 2px solid var(--accent); outline-offset: 1px; }
-.swatch:disabled { cursor: not-allowed; opacity: 0.6; }
+.swatch.active { outline: 2px solid var(--accent); outline-offset: 2px; box-shadow: 0 2px 6px rgba(0,0,0,0.12); }
+.swatch:disabled { cursor: not-allowed; opacity: 0.4; }
 
 textarea {
-  width: 100%; font-size: 13px; padding: 8px 10px;
+  width: 100%; font-size: var(--fs-base); padding: 10px 12px;
   border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--panel); resize: vertical; min-height: 64px;
-  font-family: inherit;
+  background: var(--panel); resize: vertical; min-height: 80px;
+  font-family: inherit; line-height: 1.55;
 }
-.hint { font-size: 11px; padding: 4px 0 0; margin: 0; color: var(--text-muted); }
+.hint { font-size: var(--fs-xs); padding: 6px 0 0; margin: 0; color: var(--text-muted); }
 .hint.err { color: var(--status-red); }
 .err-banner {
-  background: var(--status-red-bg); border: 1px solid rgba(220,38,38,0.30);
-  color: var(--status-red); padding: 6px 10px; border-radius: var(--radius);
-  font-size: 12px; margin: 0 0 10px;
+  background: var(--status-red-bg); border: 1px solid var(--status-red-border);
+  color: var(--status-red-text-strong); padding: 8px 12px; border-radius: var(--radius);
+  font-size: var(--fs-sm); margin: 0 0 12px;
 }
 .foot {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding-top: 10px; border-top: 1px solid var(--border-subtle);
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding-top: 14px; border-top: 1px solid var(--border-subtle);
 }
-.foot-right { display: flex; gap: 8px; }
+.foot-right { display: flex; gap: 10px; }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.primary:disabled { opacity: 0.4; cursor: not-allowed; }
 .danger {
   background: transparent; color: var(--status-red);
-  border: 1px solid var(--status-red); border-radius: var(--radius);
-  padding: 4px 12px; font-size: 12.5px; cursor: pointer;
+  border: 1px solid var(--status-red-border); border-radius: var(--radius);
+  padding: 7px 14px; font-size: var(--fs-sm); cursor: pointer;
+  transition: all var(--transition);
 }
-.danger:disabled { opacity: 0.55; cursor: not-allowed; }
-.danger:hover:not(:disabled) { background: var(--status-red-bg); }
+.danger:disabled { opacity: 0.4; cursor: not-allowed; }
+.danger:hover:not(:disabled) { background: var(--status-red-bg); border-color: var(--status-red); }
 
 .confirm-mask {
-  position: absolute; inset: 0; background: rgba(15,23,42,0.55);
+  position: absolute; inset: 0; background: rgba(30,27,75,0.6);
   display: flex; align-items: center; justify-content: center;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(2px);
 }
 .confirm-box {
-  background: var(--panel); border-radius: var(--radius);
-  padding: 16px 18px; width: 88%; max-width: 380px;
+  background: var(--panel); border-radius: var(--radius-lg);
+  padding: 20px; width: 88%; max-width: 420px;
   box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border);
 }
-.confirm-box p { margin: 0 0 8px; font-size: 13px; }
+.confirm-box p { margin: 0 0 10px; font-size: var(--fs-base); color: var(--text-strong); font-weight: 500; }
+.confirm-box .hint { font-size: var(--fs-sm); color: var(--text-muted); font-style: italic; }
+@media (prefers-reduced-motion: reduce) {
+  .mask, .box { animation: none; }
+  .swatch { transition: none; }
+  .danger { transition: none; }
+}
 </style>

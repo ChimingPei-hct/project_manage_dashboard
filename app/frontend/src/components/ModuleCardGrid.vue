@@ -129,7 +129,7 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
             <div class="kpi-row goal">
               <span class="kr-label">目标</span>
               <span class="kr-text">{{ kpi.goal || '—' }}</span>
-              <span class="kpi-dot" :class="`tone-${kpi.color || 'gray'}`" :title="kpi.color || '未填'"></span>
+              <span class="kpi-dot" :class="`tone-${kpi.color || 'gray'}`" v-tooltip="kpi.color || '未填'"></span>
             </div>
             <div class="kpi-row actual">
               <span class="kr-label">现状</span>
@@ -185,161 +185,174 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 18px;
+  gap: 20px;
   padding: 0 24px;
 }
 
-/* ── 卡片:顶部 4px 状态色条 + 状态色微 tint 背景 + 强化 elevation ── */
+/* ── Card ── */
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  padding: 22px 20px 14px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   transition:
     box-shadow var(--transition),
     transform var(--transition),
-    border-color var(--transition),
-    background var(--transition);
+    border-color var(--transition);
   position: relative;
-  overflow: hidden;
   font-feature-settings: 'tnum' on;
 }
-/* 顶部状态色横条 —— 最显眼的状态指示 */
 .card::before {
   content: '';
   position: absolute;
   left: 0; right: 0; top: 0;
-  height: 4px;
+  height: 3px;
   background: var(--status-gray);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
-.card.tone-green  { background: linear-gradient(180deg, var(--status-green-bg) 0%, var(--panel) 96px); }
-.card.tone-yellow { background: linear-gradient(180deg, var(--status-yellow-bg) 0%, var(--panel) 96px); }
-.card.tone-red    { background: linear-gradient(180deg, var(--status-red-bg) 0%, var(--panel) 96px); }
 .card.tone-green::before  { background: var(--status-green); }
 .card.tone-yellow::before { background: var(--status-yellow); }
 .card.tone-red::before    { background: var(--status-red); }
 .card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
   border-color: var(--border-strong);
 }
 
 .card-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 11px;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 1px 6px;
-  border-radius: var(--radius);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
   background: var(--panel-soft);
   color: var(--text-muted);
   border: 1px solid var(--border-subtle);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
   z-index: 1;
 }
 
 .card-head {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-bottom: 12px;
+  gap: 10px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--border-subtle);
 }
 .card-head-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .card-head-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-shrink: 0;
 }
 .card-owner {
   font-size: 12px;
   color: var(--text-muted);
-  max-width: 110px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .card-name {
-  font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
+  font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 19px;
-  letter-spacing: 1.5px;
+  font-size: 18px;
+  letter-spacing: 0.02em;
   color: var(--text-strong);
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
-.kpis-block, .risks-block { display: flex; flex-direction: column; gap: 6px; }
+.kpis-block, .risks-block { display: flex; flex-direction: column; gap: 8px; }
 
 .section-label {
   display: flex; align-items: baseline; justify-content: space-between;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 .sl-cn {
-  font-family: 'Source Han Serif SC', 'Songti SC', 'STSong', 'Noto Serif CJK SC', serif;
-  letter-spacing: 4px; font-size: 12px; color: var(--text-muted);
+  font-family: var(--font-serif);
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 600;
 }
 
 .section-empty {
-  font-size: 12px; color: var(--text-dim);
-  font-style: italic; padding: 2px 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 0;
 }
 
 .kpi-groups { display: flex; flex-direction: column; }
 .kpi-group {
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px dashed var(--border-subtle);
 }
 .kpi-group:last-child { border-bottom: 0; }
 .kpi-row {
-  display: flex; align-items: baseline; gap: 8px;
-  font-size: 13px; line-height: 1.55;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .kpi-row .kr-label {
-  flex: 0 0 28px;
-  font-size: 11px; letter-spacing: 2px;
+  flex: 0 0 30px;
+  font-size: 11px;
+  letter-spacing: 1px;
   color: var(--text-dim);
+  text-transform: uppercase;
+  font-weight: 600;
 }
 .kpi-row .kr-text {
   flex: 1 1 auto;
-  white-space: pre-wrap; word-break: break-word;
+  white-space: pre-wrap;
+  word-break: break-word;
   font-variant-numeric: tabular-nums;
 }
 .kpi-row.goal .kr-text {
   color: var(--text-muted);
 }
 .kpi-row.actual .kr-text {
-  color: var(--text); font-weight: 600;
+  color: var(--text-strong);
+  font-weight: 600;
 }
 .kpi-row.goal .kpi-dot { margin-left: auto; flex: 0 0 auto; }
 .kpi-dot {
   display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
   background: var(--status-gray);
   vertical-align: middle;
+  box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--border-subtle);
 }
-.kpi-dot.tone-green  { background: var(--status-green); }
-.kpi-dot.tone-yellow { background: var(--status-yellow); }
-.kpi-dot.tone-red    { background: var(--status-red); }
+.kpi-dot.tone-green  { background: var(--status-green); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--status-green-border); }
+.kpi-dot.tone-yellow { background: var(--status-yellow); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--status-yellow-border); }
+.kpi-dot.tone-red    { background: var(--status-red); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--status-red-border); }
 
 .risks { list-style: none; margin: 0; padding: 0; }
 .risk-line {
-  font-size: 12.5px; line-height: 1.65;
+  font-size: 12.5px;
+  line-height: 1.7;
   color: var(--text);
-  padding: 5px 0 5px 16px;
+  padding: 6px 0 6px 18px;
   border-bottom: 1px dotted var(--border-subtle);
   position: relative;
 }
@@ -347,10 +360,12 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
 .risk-line::before {
   content: '';
   position: absolute;
-  left: 4px; top: 13px;
-  width: 5px; height: 5px;
+  left: 6px;
+  top: 14px;
+  width: 6px;
+  height: 6px;
   background: var(--text-muted);
-  border-radius: 6px;
+  border-radius: 50%;
 }
 .risk-line.sev-yellow::before { background: var(--status-yellow); }
 .risk-line.sev-red::before    { background: var(--status-red); }
@@ -362,43 +377,62 @@ const addTip = computed(() => props.createDefaults.scope === 'ltc'
   align-items: center;
   font-size: 12px;
   color: var(--text-muted);
-  padding-top: 10px;
-  border-top: 1px solid var(--text);
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
 }
 .edit-btn {
   font-size: 12px;
-  padding: 4px 12px;
-  letter-spacing: 2px;
+  padding: 5px 14px;
+  letter-spacing: 0.5px;
   border-radius: var(--radius);
+  font-weight: 500;
+}
+
+.edit-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  border-color: var(--accent);
 }
 
 .cards-toolbar {
   display: flex;
   justify-content: flex-end;
-  padding: 0 24px 10px;
+  padding: 0 24px 12px;
 }
 .add-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  letter-spacing: 2px;
-  padding: 5px 14px;
+  gap: 8px;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+  padding: 8px 16px;
   border: 1px dashed var(--border);
-  background: var(--panel-soft);
+  background: var(--panel);
   color: var(--text-muted);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: color 120ms, border-color 120ms, background 120ms;
+  transition: all var(--transition);
+  font-weight: 500;
 }
 .add-btn:hover {
   color: var(--accent);
   border-color: var(--accent);
-  background: var(--panel);
+  background: var(--panel-soft);
+  box-shadow: var(--shadow-sm);
 }
 .add-btn-plus {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1;
+}
+.add-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  border-color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card:hover { transform: none; }
+  .add-btn:hover { transform: none; }
 }
 </style>

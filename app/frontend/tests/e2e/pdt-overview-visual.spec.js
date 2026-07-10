@@ -23,8 +23,8 @@ test.describe('PdtOverview 重构后视觉', () => {
     // —— 结构断言 ——
     const tabs = page.locator('.seg-tabs .seg-tab')
     await expect(tabs).toHaveCount(2)
-    await expect(tabs.nth(0)).toHaveText('时间线')
-    await expect(tabs.nth(1)).toHaveText('全局看板')
+    await expect(tabs.nth(0)).toContainText('时间线')
+    await expect(tabs.nth(1)).toContainText('全局看板')
 
     // 默认 sub=timeline,第一个 tab 应 active
     await expect(tabs.nth(0)).toHaveClass(/active/)
@@ -59,7 +59,7 @@ test.describe('PdtOverview 重构后视觉', () => {
     })
 
     // —— 视觉约束断言 ——
-    // 1) seg-tab 无边框、透明背景(克制风核心)
+    // 1) seg-tab 无 border、active 时有 accent tint 背景(突出风:从 ghost 升级到强调态)
     const tab0Box = tabs.nth(0)
     const tab0Styles = await tab0Box.evaluate((el) => {
       const cs = getComputedStyle(el)
@@ -70,18 +70,21 @@ test.describe('PdtOverview 重构后视觉', () => {
       }
     })
     expect(tab0Styles.borderTopStyle).toBe('none')
-    // 背景应为 transparent(rgba(0,0,0,0))
+    // active tab(默认 sub=timeline → tab 0 active)应该有 accent-soft 背景 rgba 形式
+    // 但切到 kanban 后 tab 0 变 inactive → 透明
+    // 这里测试已在 kanban 模式,tab 0 非 active,背景应透明
     expect(tab0Styles.background).toMatch(/rgba\(0,\s*0,\s*0,\s*0\)|transparent/)
 
-    // 2) 工具按钮也应无可见边框(transparent 边框是 ghost 风的标志)
-    if (await timelineTool.count() === 0) {
-      // kanban 下检查权限管理按钮
-      const permBtn = page.locator('.tool-btn', { hasText: '权限管理' })
+    // 2) 工具按钮:有 panel 白底 + 1px border(从 ghost 升级到 outlined 风格,更明显)
+    const permBtn = page.locator('.tool-btn', { hasText: '权限管理' })
+    if (await permBtn.count() > 0) {
       const permStyles = await permBtn.evaluate((el) => {
         const cs = getComputedStyle(el)
-        return { borderColor: cs.borderTopColor, background: cs.backgroundColor }
+        return { borderTopWidth: cs.borderTopWidth, background: cs.backgroundColor }
       })
-      expect(permStyles.background).toMatch(/rgba\(0,\s*0,\s*0,\s*0\)|transparent/)
+      expect(permStyles.borderTopWidth).toBe('1px')
+      // panel 是 #ffffff
+      expect(permStyles.background).toMatch(/rgb\(255,\s*255,\s*255\)|#ffffff/i)
     }
 
     // 3) page-header 底部应有 1px hairline(border-bottom)

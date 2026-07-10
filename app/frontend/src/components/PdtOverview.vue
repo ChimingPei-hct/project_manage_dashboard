@@ -9,6 +9,7 @@ import ModuleCardGrid from './ModuleCardGrid.vue'
 import Modal from './harness/Modal.vue'
 import AdminPerms from './admin/AdminPerms.vue'
 import SnapshotPanel from './admin/SnapshotPanel.vue'
+import MilestoneEditor from './admin/MilestoneEditor.vue'
 
 const { pdt, modulesByScope, isReadonly } = useDashboard()
 const { me } = useAuth()
@@ -45,16 +46,22 @@ const cards = computed(() => {
   })).sort((a, b) => a.order - b.order)
 })
 
-const showAdminTool = ref('') // '' | 'perms' | 'snapshots'
+const showAdminTool = ref('') // '' | 'perms' | 'snapshots' | 'milestones'
 function openAdminTool(name) { showAdminTool.value = name }
 function closeAdminTool() { showAdminTool.value = '' }
-function openMilestonesPage() {
-  pushView({ view: 'milestones' })
-}
 
 const { current, pushView } = useView()
 const sub = computed(() => current.value.sub || 'timeline')
 function switchSub(s) { pushView({ ...current.value, sub: s }) }
+function onTabKeydown(e) {
+  const tabs = ['timeline', 'kanban']
+  const i = tabs.indexOf(sub.value)
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault()
+    const next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : (i - 1 + tabs.length) % tabs.length
+    switchSub(tabs[next])
+  }
+}
 
 const gridRef = ref(null)
 const canAddCard = computed(() => sub.value === 'kanban' && canEnterPdtAdmin.value && !isReadonly.value)
@@ -69,24 +76,26 @@ function triggerCreate() { gridRef.value?.openCreate?.() }
           role="tab"
           :aria-selected="sub === 'timeline'"
           :class="['seg-tab', { active: sub === 'timeline' }]"
-          v-tooltip="'查看时间线'"
+          v-tooltip="'查看 PDT 时间线 · 全局里程碑视图'"
           @click="switchSub('timeline')"
-        >时间线</button>
+          @keydown="onTabKeydown"
+        ><span class="tab-icon" aria-hidden="true">🗓</span>时间线</button>
         <button
           role="tab"
           :aria-selected="sub === 'kanban'"
           :class="['seg-tab', { active: sub === 'kanban' }]"
           v-tooltip="'查看 PDT 模块卡片看板'"
           @click="switchSub('kanban')"
-        >全局看板</button>
+          @keydown="onTabKeydown"
+        ><span class="tab-icon" aria-hidden="true">📊</span>全局看板</button>
       </nav>
       <div class="page-actions">
         <template v-if="canEnterPdtAdmin && !isReadonly">
           <template v-if="sub === 'timeline'">
             <button
               class="tool-btn"
-              v-tooltip="'在新标签页编辑时间线'"
-              @click="openMilestonesPage"
+              v-tooltip="'编辑时间线节点(打开弹窗)'"
+              @click="openAdminTool('milestones')"
             ><span class="tool-icon">🗓</span>时间线管理</button>
           </template>
           <template v-else>
@@ -131,6 +140,9 @@ function triggerCreate() { gridRef.value?.openCreate?.() }
     <Modal :open="showAdminTool === 'snapshots'" title="周快照" width="880px" @close="closeAdminTool">
       <SnapshotPanel />
     </Modal>
+    <Modal :open="showAdminTool === 'milestones'" title="时间线管理" width="1080px" @close="closeAdminTool">
+      <MilestoneEditor />
+    </Modal>
   </div>
 </template>
 
@@ -148,92 +160,136 @@ function triggerCreate() { gridRef.value?.openCreate?.() }
   border-bottom: 1px solid var(--border-subtle);
 }
 
-/* ── Segmented tabs:无边框无背景,active 仅靠底部 2px 下划线 + 文字色 ── */
+/* ── Segmented tabs:更大字号 + icon + active 加 tint 背景 + 3px 粗下划线 ── */
 .seg-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   align-items: stretch;
 }
 .seg-tab {
   position: relative;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 8px 14px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 10px 18px 12px;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  border-radius: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
   cursor: pointer;
-  transition: color var(--transition);
+  transition: color var(--transition), background var(--transition);
+}
+.seg-tab .tab-icon {
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity var(--transition), transform var(--transition);
 }
 .seg-tab::after {
   content: '';
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 12px;
+  right: 12px;
   bottom: -1px;
-  height: 2px;
+  height: 3px;
   background: transparent;
-  border-radius: var(--radius-sm);
-  transition: background var(--transition);
+  border-radius: 2px 2px 0 0;
+  transition: background var(--transition), left var(--transition), right var(--transition);
 }
-.seg-tab:hover { color: var(--text); background: transparent; }
-.seg-tab.active { color: var(--accent); }
-.seg-tab.active::after { background: var(--accent); }
-.seg-tab:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+.seg-tab:hover {
+  color: var(--text-strong);
+  background: var(--panel-soft);
+}
+.seg-tab:hover .tab-icon { opacity: 1; transform: scale(1.1); }
+.seg-tab.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.seg-tab.active .tab-icon { opacity: 1; }
+.seg-tab.active::after {
+  background: var(--gradient-brand);
+  left: 6px;
+  right: 6px;
+}
+.seg-tab:focus-visible { outline: 2px solid var(--accent-ring); outline-offset: 2px; }
+.seg-tab:focus-visible .tab-icon { opacity: 1; }
 
-/* ── 右侧 actions 区:工具按钮 ghost 风,主按钮保留 primary 但更紧凑 ── */
+/* ── 右侧 actions 区:工具按钮放大 + 加边框 + hover 出 accent ── */
 .page-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding-bottom: 6px;
+  gap: 6px;
+  padding-bottom: 8px;
 }
 .tool-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  padding: 5px 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
+  gap: 7px;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  transition:
+    color var(--transition),
+    background var(--transition),
+    border-color var(--transition),
+    transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow var(--transition);
 }
 .tool-btn:hover {
-  color: var(--text);
-  background: var(--panel-soft);
-  border-color: var(--border-subtle);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
+.tool-btn:active { transform: translateY(0); }
 .tool-icon {
-  font-size: 11px;
-  color: var(--text-dim);
+  font-size: 14px;
+  color: var(--text-muted);
   line-height: 1;
+  transition: color var(--transition), transform var(--transition);
 }
-.tool-btn:hover .tool-icon { color: var(--text-muted); }
+.tool-btn:hover .tool-icon { color: var(--accent); transform: scale(1.1); }
 
 .action-divider {
   width: 1px;
-  height: 16px;
+  height: 20px;
   background: var(--border);
-  margin: 0 6px;
+  margin: 0 8px;
 }
 
 .add-card-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  font-size: 12.5px;
-  padding: 5px 12px;
+  gap: 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 7px 16px;
   border-radius: var(--radius);
-  box-shadow: 0 1px 1px var(--accent-glow);
+  box-shadow: 0 1px 2px var(--accent-glow);
 }
 .add-card-plus {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1;
-  margin-right: 1px;
+  margin-right: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg-tab:hover .tab-icon { transform: none; }
+  .tool-btn:hover { transform: none; }
+  .tool-btn:hover .tool-icon { transform: none; }
 }
 </style>
