@@ -540,29 +540,27 @@
   },
   "mod-tpl-active-safety--zp22": {
     "module_color": "yellow",
-    "risk_note": "用例覆盖不全,需补回归",
-    "kpi_values": {},
-    "updated_by": "ou_seed_random",
-    "updated_at": "2026-05-25T00:46:44+08:00",
-    "metadata": {
-      "_seed": "random-debug"
-    },
     "sub_items_color": {
       "aeb": "green",
       "fcw": "green",
-      "ldw": "yellow",
+      "ldw": "green",
       "ldp": "green"
     },
-    "sub_items_risk": {
-      "ldw": "联调障碍,待上游反馈"
-    },
+    "kpi_values": {},
     "kpi_items": [],
     "risks": [
       {
         "severity": "red",
         "text": "用例覆盖不全,需补回归"
       }
-    ]
+    ],
+    "risk_note": "用例覆盖不全,需补回归",
+    "sub_items_risk": {
+      "ldw": "联调障碍,待上游反馈"
+    },
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T10:49:43.718176+08:00",
+    "metadata": {}
   },
   "mod-tpl-parking-pnc--zp22": {
     "module_color": "green",
@@ -773,5 +771,952 @@
     "kpi_items": [],
     "risks": [],
     "sub_items_risk": {}
+  },
+  "ltc-test1-b573e96539": {
+    "module_color": "green",
+    "sub_items_color": {
+      "9fefc4691740": "yellow"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {
+      "9fefc4691740": "阻塞"
+    },
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T10:57:10.817130+08:00",
+    "metadata": {}
+  },
+  "mod-tpl-static-perception--test3": {
+    "module_color": "green",
+    "sub_items_color": {
+      "tsr": "green"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T13:38:00.298964+08:00",
+    "metadata": {}
+  },
+  "mod-tpl-static-perception--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "lane": "green",
+      "freespace": "green",
+      "tsr": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-dynamic-perception--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "detection": "green",
+      "tracking": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-perception--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "slot": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-perception-integration--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-driving--test4": {
+    "module_color": "green",
+    "sub_items_color": {
+      "acc": "green",
+      "ica": "green",
+      "noa": "yellow"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {
+      "noa": "风险"
+    },
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:23.936866+08:00",
+    "metadata": {}
+  },
+  "mod-tpl-active-safety--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "aeb": "green",
+      "fcw": "green",
+      "ldw": "green",
+      "ldp": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-pnc--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "fapa": "green",
+      "rpa": "green",
+      "cpa": "green",
+      "raeb": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-hmi--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-drive-park-sm--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-ota--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "recovery": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-comm--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "ipc": "green",
+      "ros2": "green",
+      "can": "green",
+      "eth": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-diagnosis--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-platform-base--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "acore": "green",
+      "mcu": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-functional-safety--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-info-security--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-calibration--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-replay--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-performance--test4": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:17:10.213325+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-static-perception--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "lane": "green",
+      "freespace": "green",
+      "tsr": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-dynamic-perception--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "detection": "green",
+      "tracking": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-perception--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "slot": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-perception-integration--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-driving--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "acc": "green",
+      "ica": "green",
+      "noa": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-active-safety--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "aeb": "green",
+      "fcw": "green",
+      "ldw": "green",
+      "ldp": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-pnc--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "fapa": "green",
+      "rpa": "green",
+      "cpa": "green",
+      "raeb": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-hmi--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-drive-park-sm--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-ota--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "recovery": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-comm--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "ipc": "green",
+      "ros2": "green",
+      "can": "green",
+      "eth": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-diagnosis--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-platform-base--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "acore": "green",
+      "mcu": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-functional-safety--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-info-security--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-calibration--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-replay--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-performance--test5": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:36.225202+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-static-perception--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "lane": "green",
+      "freespace": "green",
+      "tsr": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-dynamic-perception--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "detection": "green",
+      "tracking": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-perception--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "slot": "green",
+      "obstacle": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-perception-integration--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-driving--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "acc": "green",
+      "ica": "green",
+      "noa": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-active-safety--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "aeb": "green",
+      "fcw": "green",
+      "ldw": "green",
+      "ldp": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-parking-pnc--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "fapa": "green",
+      "rpa": "green",
+      "cpa": "green",
+      "raeb": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-hmi--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-drive-park-sm--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-ota--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "recovery": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-comm--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "ipc": "green",
+      "ros2": "green",
+      "can": "green",
+      "eth": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-diagnosis--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-platform-base--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {
+      "acore": "green",
+      "mcu": "green"
+    },
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-functional-safety--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-info-security--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-calibration--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-replay--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "mod-tpl-performance--test7": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:21:55.930199+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
+  },
+  "cff995b8d9c94950b9ad9db489d02a0e": {
+    "module_color": "green",
+    "sub_items_color": {
+      "37c0d0bdd49a": "green"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T14:23:16.355788+08:00",
+    "metadata": {}
+  },
+  "ltc-test8-650748b246": {
+    "module_color": "green",
+    "sub_items_color": {
+      "7eb36e8eeccb": "green"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T17:40:40.946662+08:00",
+    "metadata": {}
+  },
+  "ltc-test8-f31bb74239": {
+    "module_color": "green",
+    "sub_items_color": {
+      "c8f32adc1295": "green"
+    },
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "risk_note": "",
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T17:41:06.017836+08:00",
+    "metadata": {}
+  },
+  "mod-tpl-info-security--e2e_green_check": {
+    "module_color": "green",
+    "risk_note": "",
+    "kpi_values": {},
+    "kpi_items": [],
+    "risks": [],
+    "sub_items_color": {},
+    "sub_items_risk": {},
+    "updated_by": "ou_dev_admin",
+    "updated_at": "2026-05-26T18:26:59.707644+08:00",
+    "metadata": {
+      "seeded_by": "init-from-template"
+    }
   }
 }
